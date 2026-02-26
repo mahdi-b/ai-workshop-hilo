@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Error Types — Interactive Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f5f5f5;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --accent-primary: #2563eb;
+    --accent-info: #06b6d4;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+  }
+
+  /* Main Layout */
+  .main {
+    flex: 1;
+    display: flex;
+    height: calc(100vh - 100px);
+  }
+
+  /* Left Panel - Category Selector */
+  .left-panel {
+    width: 320px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+  }
+
+  /* Category Groups and Cards */
+  .categories {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .category-group {
+    margin-bottom: 0.5rem;
+  }
+
+  .category-group-title {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-tertiary);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .category-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .category-card {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    margin-left: 0.75rem;
+  }
+
+  .category-card.active {
+    border-color: var(--accent-primary);
+    background: #eff6ff;
+  }
+
+  .category-card:hover:not(.active) {
+    border-color: var(--border-strong);
+    transform: translateX(4px);
+  }
+
+  .category-icon {
+    position: absolute;
+    top: 0.875rem;
+    right: 0.875rem;
+    font-size: 1.25rem;
+    opacity: 0.5;
+  }
+
+  .category-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+    padding-right: 2rem;
+  }
+
+  .category-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+  }
+
+  .category-count {
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+  }
+
+  /* Middle Panel - Examples */
+  .middle-panel {
+    flex: 1;
+    background: var(--bg-tertiary);
+    overflow-y: auto;
+    padding: 2rem;
+  }
+
+  .examples-header {
+    margin-bottom: 2rem;
+  }
+
+  .examples-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .examples-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+  }
+
+  /* Example Cards */
+  .example-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .example-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .example-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .example-title {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .example-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .example-side {
+    padding: 1.5rem;
+  }
+
+  .example-side.bad {
+    background: #fef2f2;
+    border-right: 1px solid var(--border);
+  }
+
+  .example-side.good {
+    background: #f0fdf4;
+  }
+
+  .example-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .example-label.bad-label {
+    color: var(--accent-danger);
+  }
+
+  .example-label.good-label {
+    color: var(--accent-success);
+  }
+
+  .example-label svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .example-text {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    white-space: pre-wrap;
+  }
+
+  .example-explanation {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border-left: 3px solid var(--accent-info);
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Right Panel - Prompt Output */
+  .right-panel {
+    width: 380px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .prompt-section {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .prompt-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+  }
+
+  .prompt-output {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .copy-button {
+    margin-top: 1rem;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+  }
+
+  .copy-button:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .copy-button.copied {
+    background: var(--accent-success);
+  }
+
+  /* Category Filter Buttons */
+  .presets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .preset-btn {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--accent-primary);
+    background: #eff6ff;
+  }
+
+  .preset-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+  }
+
+  /* Stats Bar */
+  .stats-bar {
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Prompt Error Types Explorer</h1>
+  <div class="subtitle">Interactive guide to common prompting mistakes and how to fix them</div>
+</div>
+
+<div class="main">
+  <!-- Left Panel - Categories -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <div class="panel-title">Error Type Explorer</div>
+      <div class="presets">
+        <button class="preset-btn" onclick="showCategoryGroup('uncertain-content')">Uncertain Content</button>
+        <button class="preset-btn" onclick="showCategoryGroup('uncertain-form')">Uncertain Form</button>
+        <button class="preset-btn" onclick="showCategoryGroup('tractability')">Tractability</button>
+        <button class="preset-btn" onclick="showCategoryGroup('safety')">Safety</button>
+      </div>
+    </div>
+    <div class="categories" id="categories">
+      <!-- Categories will be inserted here -->
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value" id="total-errors">9</div>
+        <div class="stat-label">Total Types</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="examples-count">27</div>
+        <div class="stat-label">Examples</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Panel - Examples -->
+  <div class="middle-panel">
+    <div class="examples-header">
+      <div class="examples-title" id="examples-title">Select an error type to explore</div>
+      <div class="examples-subtitle" id="examples-subtitle">Click on any category to see examples of bad vs. good prompts</div>
+    </div>
+    <div id="examples-container">
+      <!-- Examples will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Right Panel - Prompt Output -->
+  <div class="right-panel">
+    <div class="prompt-section">
+      <div class="prompt-title">Generated Learning Prompt</div>
+      <div class="prompt-output" id="prompt-output">Select error types from the left panel to generate a customized prompt for learning about common prompting mistakes.
+
+This prompt will update as you explore different categories and examples, helping you understand what to avoid when writing prompts for AI systems.</div>
+      <button class="copy-button" onclick="copyPrompt()">Copy Prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Data structure for error types
+const errorData = {
+  'insufficient-context': {
+    name: 'Insufficient Context',
+    icon: '🎯',
+    description: 'Assuming the AI already knows project details',
+    category: 'uncertain-content',
+    examples: [
+      {
+        title: 'Dangling reference',
+        bad: 'Fix this issue.',
+        good: 'Fix the grammar and spelling errors in the executive summary section.',
+        explanation: 'Always specify exactly what "this" or "that" refers to.'
+      },
+      {
+        title: 'Unclear results request',
+        bad: 'Give me the results.',
+        good: 'Give me the Q2 sales results from the quarterly report.',
+        explanation: 'Specify which results, from what source, and what time period.'
+      },
+      {
+        title: 'Vague task',
+        bad: 'I want that!',
+        good: 'I want the presentation slides we discussed yesterday about market expansion.',
+        explanation: 'Replace vague references with specific descriptions.'
+      }
+    ]
+  },
+  'ambiguity': {
+    name: 'Ambiguity',
+    icon: '❓',
+    description: 'Vague instructions or conflicting requirements',
+    category: 'uncertain-content',
+    examples: [
+      {
+        title: 'Undefined customer scope',
+        bad: 'Analyze customer behavior.',
+        good: 'Identify customers who purchased 2+ times last quarter but not in the past 30 days.',
+        explanation: 'Specify which customers, behaviors, and timeframe to analyze.'
+      },
+      {
+        title: 'Unclear improvement target',
+        bad: 'Improve the product.',
+        good: 'Suggest two packaging changes to reduce shipping costs by 20%.',
+        explanation: 'Define what aspect to improve and how to measure success.'
+      },
+      {
+        title: 'Contradictory constraints',
+        bad: 'Make it detailed but brief.',
+        good: 'Write a detailed analysis in exactly 200 words.',
+        explanation: 'Resolve contradictions by setting clear boundaries.'
+      }
+    ]
+  },
+  'logical-errors': {
+    name: 'Silent Logical Errors',
+    icon: '🔍',
+    description: 'Hidden assumptions that lead to wrong results',
+    category: 'uncertain-content',
+    examples: [
+      {
+        title: 'Undefined scale direction',
+        bad: 'Assign a priority score to every task.',
+        good: 'Assign priority scores 1-5, where 1 = lowest and 5 = highest priority.',
+        explanation: 'Explicitly define what high and low values mean.'
+      },
+      {
+        title: 'Ambiguous time boundaries',
+        bad: 'List active members last week.',
+        good: 'List active members for Monday-Sunday, Feb 17-23.',
+        explanation: 'Specify exact date ranges to avoid confusion about week boundaries.'
+      },
+      {
+        title: 'Implicit sorting rules',
+        bad: 'Show me the top performers.',
+        good: 'Show top 10 employees by customer satisfaction score, highest to lowest.',
+        explanation: 'Define "top" with specific metrics and sort order.'
+      }
+    ]
+  },
+  'excessive-context': {
+    name: 'Excessive/Irrelevant Context',
+    icon: '📚',
+    description: 'Including unnecessary background information',
+    category: 'uncertain-content',
+    examples: [
+      {
+        title: 'Irrelevant backstory',
+        bad: 'I\'ve been working on this project for 3 months, my team has 5 people, we meet on Tuesdays, and we need to calculate ROI.',
+        good: 'Calculate ROI using revenue=$500k, costs=$300k.',
+        explanation: 'Strip away backstory that doesn\'t affect the output.'
+      },
+      {
+        title: 'Over-explaining context',
+        bad: 'As you may know, our company was founded in 1995 and has grown significantly. Can you write an email to customers about our new store hours?',
+        good: 'Write a customer email announcing new store hours: Mon-Fri 9am-7pm, Sat 10am-5pm.',
+        explanation: 'Skip company history and get to the specific request.'
+      },
+      {
+        title: 'Unnecessary justification',
+        bad: 'My boss asked me to do this because we have a meeting tomorrow and I need to present, so can you create a sales chart?',
+        good: 'Create a bar chart showing Q1-Q4 sales for 2025.',
+        explanation: 'Focus on what you need, not why you need it.'
+      }
+    ]
+  },
+  'wrong-format': {
+    name: 'Wrong Format',
+    icon: '📋',
+    description: 'Underspecified or incorrect input/output format',
+    category: 'uncertain-form',
+    examples: [
+      {
+        title: 'Date format confusion',
+        bad: 'Process the dates in the spreadsheet.',
+        good: 'Process dates from the spreadsheet (format: MM-DD-YYYY).',
+        explanation: 'Always specify date, number, and text formats explicitly.'
+      },
+      {
+        title: 'Undefined output structure',
+        bad: 'Give me a summary.',
+        good: 'Give me a 3-bullet summary, each bullet 15-20 words.',
+        explanation: 'Define the exact structure and length of outputs.'
+      },
+      {
+        title: 'Missing export format',
+        bad: 'Export the results.',
+        good: 'Export as a table with columns: Name, Date, Amount, Status.',
+        explanation: 'Specify exact format and column/field names.'
+      }
+    ]
+  },
+  'compatibility': {
+    name: 'Compatibility Issues',
+    icon: '⚙️',
+    description: 'Output incompatible with required style or environment',
+    category: 'uncertain-form',
+    examples: [
+      {
+        title: 'Writing style mismatch',
+        bad: 'Revise this letter.',
+        good: 'Revise this letter in formal business style appropriate for executive leadership.',
+        explanation: 'Define the specific style, tone, or format required.'
+      },
+      {
+        title: 'Audience mismatch',
+        bad: 'Explain our product.',
+        good: 'Explain our product in simple terms for customers with no technical background.',
+        explanation: 'Specify your target audience and their knowledge level.'
+      },
+      {
+        title: 'Format incompatibility',
+        bad: 'Create a presentation.',
+        good: 'Create a 10-slide presentation outline with bullet points, suitable for a 15-minute talk.',
+        explanation: 'Specify presentation format, length, and time constraints.'
+      }
+    ]
+  },
+  'excessive-scope': {
+    name: 'Excessive Scope',
+    icon: '🌍',
+    description: 'Request too large for one prompt',
+    category: 'tractability',
+    examples: [
+      {
+        title: 'Unbounded project request',
+        bad: 'Create a complete business plan for my company.',
+        good: 'Write an executive summary for a coffee shop business plan (200 words).',
+        explanation: 'Break large projects into specific, bounded sections.'
+      },
+      {
+        title: 'Overly broad analysis',
+        bad: 'Summarize modern history.',
+        good: 'Summarize the key events of the American Civil Rights Movement (1954-1968).',
+        explanation: 'Narrow the scope to a specific topic and time period.'
+      },
+      {
+        title: 'Complete documentation',
+        bad: 'Write all the documentation for our product.',
+        good: 'Write a getting-started guide for new users (5 main steps).',
+        explanation: 'Focus on one document or section at a time.'
+      }
+    ]
+  },
+  'scalability': {
+    name: 'Scalability',
+    icon: '📈',
+    description: 'Approach works small but fails at scale',
+    category: 'tractability',
+    examples: [
+      {
+        title: 'Unmanageable volume',
+        bad: 'Review all customer feedback.',
+        good: 'Identify the top 5 recurring themes in this month\'s customer feedback.',
+        explanation: 'When dealing with large volumes, ask for patterns and summaries.'
+      },
+      {
+        title: 'Unscalable survey design',
+        bad: 'Design a survey with detailed open-ended questions.',
+        good: 'Design a 10-question survey using rating scales for 1000+ respondents.',
+        explanation: 'Consider analysis complexity when designing for many responses.'
+      },
+      {
+        title: 'Manual process at scale',
+        bad: 'Check each invoice for errors.',
+        good: 'List the 5 most common invoice error types and how to spot them.',
+        explanation: 'Ask for patterns and rules rather than item-by-item processing.'
+      }
+    ]
+  },
+  'responsible-use': {
+    name: 'Responsible Use',
+    icon: '🛡️',
+    description: 'Ignoring safety, ethics, fairness, or privacy',
+    category: 'safety',
+    examples: [
+      {
+        title: 'Privacy violation',
+        bad: 'Analyze this list of employee salaries with their names.',
+        good: 'Analyze salary distribution by department (anonymized data).',
+        explanation: 'Never include personally identifiable information unnecessarily.'
+      },
+      {
+        title: 'Biased analysis request',
+        bad: 'Summarize why our competitor\'s product is bad.',
+        good: 'Compare our product with competitor X across these 5 objective criteria.',
+        explanation: 'Request balanced, factual analysis rather than biased conclusions.'
+      },
+      {
+        title: 'Inappropriate targeting',
+        bad: 'Write marketing targeting vulnerable groups.',
+        good: 'Write ethical marketing that complies with consumer protection guidelines.',
+        explanation: 'Explicitly exclude targeting of vulnerable populations and follow ethical guidelines.'
+      }
+    ]
+  }
+};
+
+// State management
+const state = {
+  selectedCategories: [],
+  selectedExamples: [],
+  viewMode: 'all'
+};
+
+// Initialize the UI
+function init() {
+  renderCategories();
+  updatePrompt();
+}
+
+// Render category cards grouped by main categories
+function renderCategories() {
+  const container = document.getElementById('categories');
+  container.innerHTML = '';
+
+  // Group errors by category
+  const groups = {
+    'uncertain-content': {
+      title: 'Uncertain Content',
+      items: []
+    },
+    'uncertain-form': {
+      title: 'Uncertain Form',
+      items: []
+    },
+    'tractability': {
+      title: 'Tractability',
+      items: []
+    },
+    'safety': {
+      title: 'Safety',
+      items: []
+    }
+  };
+
+  // Organize error types into groups
+  Object.entries(errorData).forEach(([key, data]) => {
+    if (groups[data.category]) {
+      groups[data.category].items.push({ key, ...data });
+    }
+  });
+
+  // Render each group
+  Object.entries(groups).forEach(([groupKey, group]) => {
+    if (group.items.length === 0) return;
+
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'category-group';
+
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'category-group-title';
+    groupTitle.textContent = group.title;
+    groupDiv.appendChild(groupTitle);
+
+    const itemsDiv = document.createElement('div');
+    itemsDiv.className = 'category-group-items';
+
+    group.items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'category-card';
+      card.onclick = () => selectCategory(item.key);
+      card.innerHTML = `
+        <div class="category-icon">${item.icon}</div>
+        <div class="category-name">${item.name}</div>
+        <div class="category-desc">${item.description}</div>
+        <div class="category-count">${item.examples.length} examples</div>
+      `;
+      itemsDiv.appendChild(card);
+    });
+
+    groupDiv.appendChild(itemsDiv);
+    container.appendChild(groupDiv);
+  });
+}
+
+// Select a category and show examples
+function selectCategory(key) {
+  // Update active state
+  document.querySelectorAll('.category-card').forEach((card) => {
+    // Check if this card's content matches the selected key
+    const cardName = card.querySelector('.category-name').textContent;
+    const isActive = errorData[key] && errorData[key].name === cardName;
+
+    if (isActive) {
+      card.classList.add('active');
+    } else {
+      card.classList.remove('active');
+    }
+  });
+
+  // Update state
+  if (!state.selectedCategories.includes(key)) {
+    state.selectedCategories.push(key);
+  }
+
+  // Show examples
+  renderExamples(key);
+  updatePrompt();
+}
+
+// Render examples for selected category
+function renderExamples(categoryKey) {
+  const data = errorData[categoryKey];
+  const container = document.getElementById('examples-container');
+
+  // Update header
+  document.getElementById('examples-title').textContent = data.name;
+  document.getElementById('examples-subtitle').textContent = data.description;
+
+  // Clear and render examples
+  container.innerHTML = '';
+
+  data.examples.forEach((example, index) => {
+    const card = document.createElement('div');
+    card.className = 'example-card';
+    card.innerHTML = `
+      <div class="example-header">
+        <div class="example-number">${index + 1}</div>
+        <div class="example-title">${example.title}</div>
+      </div>
+      <div class="example-content">
+        <div class="example-side bad">
+          <div class="example-label bad-label">
+            <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+            Poor Prompt
+          </div>
+          <div class="example-text">${example.bad}</div>
+        </div>
+        <div class="example-side good">
+          <div class="example-label good-label">
+            <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            Better Prompt
+          </div>
+          <div class="example-text">${example.good}</div>
+        </div>
+      </div>
+      <div style="padding: 1.5rem;">
+        <div class="example-explanation">
+          💡 <strong>Why it's better:</strong> ${example.explanation}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    // Track selected example
+    const exampleKey = `${categoryKey}-${index}`;
+    if (!state.selectedExamples.includes(exampleKey)) {
+      state.selectedExamples.push(exampleKey);
+    }
+  });
+}
+
+// Update the prompt output
+function updatePrompt() {
+  const promptEl = document.getElementById('prompt-output');
+
+  if (state.selectedCategories.length === 0) {
+    promptEl.textContent = `Select error types from the left panel to generate a customized prompt for learning about common prompting mistakes.
+
+This prompt will update as you explore different categories and examples, helping you understand what to avoid when writing prompts for AI systems.`;
+    return;
+  }
+
+  const parts = [];
+
+  parts.push('I want to learn about common prompting errors to improve my AI interactions.\n');
+
+  // List selected categories
+  parts.push('\nError types I\'m studying:');
+  state.selectedCategories.forEach(key => {
+    const data = errorData[key];
+    parts.push(`• ${data.name}: ${data.description}`);
+  });
+
+  // Focus areas based on categories
+  parts.push('\n\nPlease help me understand:');
+
+  if (state.selectedCategories.some(k => errorData[k].category === 'uncertain-content')) {
+    parts.push('• How to provide clear, complete context without ambiguity or excess');
+  }
+
+  if (state.selectedCategories.some(k => errorData[k].category === 'uncertain-form')) {
+    parts.push('• How to specify exact formats, structures, and style requirements');
+  }
+
+  if (state.selectedCategories.some(k => errorData[k].category === 'tractability')) {
+    parts.push('• How to scope requests appropriately and consider scale implications');
+  }
+
+  if (state.selectedCategories.some(k => errorData[k].category === 'safety')) {
+    parts.push('• How to ensure responsible, ethical, and privacy-conscious prompting');
+  }
+
+  // Add specific examples exploration
+  if (state.selectedExamples.length > 0) {
+    parts.push(`\n\nI've reviewed ${state.selectedExamples.length} examples showing bad vs. good prompts.`);
+    parts.push('Focus on practical techniques to avoid these specific mistakes.');
+  }
+
+  // Request for guidance
+  parts.push('\n\nProvide:');
+  parts.push('1. Quick mental checklist before writing any prompt');
+  parts.push('2. Red flags that indicate I might be making these errors');
+  parts.push('3. One memorable rule for each error type');
+
+  promptEl.textContent = parts.join('\n');
+}
+
+// Copy prompt to clipboard
+function copyPrompt() {
+  const text = document.getElementById('prompt-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-button');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy Prompt';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Show specific category group
+function showCategoryGroup(categoryType) {
+  // Clear previous selections
+  state.selectedCategories = [];
+  state.selectedExamples = [];
+
+  // Clear all active states
+  document.querySelectorAll('.category-card').forEach(card => {
+    card.classList.remove('active');
+  });
+
+  // Update button highlighting
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.remove('active');
+    // Check if this button matches the selected category
+    if (btn.getAttribute('onclick').includes(categoryType)) {
+      btn.classList.add('active');
+    }
+  });
+
+  // Find and select all items in this category
+  const itemsToSelect = [];
+  Object.entries(errorData).forEach(([key, data]) => {
+    if (data.category === categoryType) {
+      itemsToSelect.push(key);
+    }
+  });
+
+  // Select first item in the category to show examples
+  if (itemsToSelect.length > 0) {
+    selectCategory(itemsToSelect[0]);
+
+    // Scroll to top of examples
+    document.querySelector('.middle-panel').scrollTop = 0;
+  }
+}
+
+// Initialize on load
+init();
+</script>
+
+</body>
+</html>

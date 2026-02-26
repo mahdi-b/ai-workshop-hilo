@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window Simulator — AI Memory Visualization</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Main Panel */
+  .main-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+  }
+
+  .token-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .token-counter.normal { color: var(--accent-blue); }
+  .token-counter.warning { color: var(--accent-amber); background: #fef3c7; border-color: #fbbf24; }
+  .token-counter.critical { color: var(--accent-red); background: #fee2e2; border-color: #f87171; }
+
+  /* Context Bar */
+  .context-bar-container {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .context-bar {
+    height: 60px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bar-segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .bar-segment.system {
+    background: var(--text-tertiary);
+  }
+
+  .bar-segment.user {
+    background: var(--accent-blue);
+  }
+
+  .bar-segment.ai {
+    background: var(--accent-purple);
+  }
+
+  .bar-segment:hover {
+    opacity: 0.8;
+  }
+
+  /* Grid Lines */
+  .grid-lines {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-strong);
+    opacity: 0.5;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .legend-dot.system { background: var(--text-tertiary); }
+  .legend-dot.user { background: var(--accent-blue); }
+  .legend-dot.ai { background: var(--accent-purple); }
+  .legend-dot.empty { background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
+
+  /* Alerts */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    display: none;
+  }
+
+  .alert.warning {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+  }
+
+  .alert.error {
+    background: #fee2e2;
+    border: 1px solid #f87171;
+    color: #991b1b;
+  }
+
+  /* Token Breakdown */
+  .breakdown-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: none;
+  }
+
+  .breakdown-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .exchange-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .exchange-row:hover {
+    background: var(--bg-secondary);
+  }
+
+  .exchange-row.lit {
+    background: var(--bg-tertiary);
+    box-shadow: inset 0 0 0 2px var(--accent-blue);
+  }
+
+  .exchange-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    width: 40px;
+  }
+
+  .exchange-bar {
+    flex: 1;
+    height: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .exchange-bar-user {
+    background: var(--accent-blue);
+  }
+
+  .exchange-bar-ai {
+    background: var(--accent-purple);
+  }
+
+  .exchange-tokens {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    width: 80px;
+    text-align: right;
+  }
+
+  .hint {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* Chat Window */
+  .chat-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .chat-header {
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  .chat-body {
+    height: 400px;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: white;
+  }
+
+  .chat-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-body::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+  }
+
+  .chat-body::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+
+  .chat-empty {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 4rem 0;
+  }
+
+  /* Messages */
+  .bwrap {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .bwrap.r {
+    flex-direction: row-reverse;
+  }
+
+  .bwrap.dim {
+    opacity: 0.3;
+  }
+
+  .bwrap.glow .bubble {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .bubble {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .bubble.user {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .bubble.ai {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+  }
+
+  .blbl {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.25rem;
+    opacity: 0.9;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .btn {
+    padding: 0.625rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .btn-send {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .btn-send:hover {
+    background: #2563eb;
+  }
+
+  .btn-send:disabled {
+    background: var(--text-tertiary);
+    cursor: not-allowed;
+  }
+
+  .btn-reset {
+    background: white;
+    color: var(--text-primary);
+    border-color: var(--border);
+    display: none;
+  }
+
+  .btn-reset:hover {
+    background: var(--bg-secondary);
+  }
+
+  /* Key Takeaway */
+  .takeaway {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent-blue);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+  }
+
+  .takeaway strong {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Tooltip */
+  #barTooltip {
+    position: fixed;
+    background: var(--text-primary);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    max-width: 320px;
+    pointer-events: none;
+    display: none;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    line-height: 1.5;
+  }
+
+  /* Animations */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bwrap.anim {
+    animation: slideIn 0.3s ease;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body {
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+    }
+
+    .bubble {
+      max-width: 85%;
+    }
+
+    .legend {
+      gap: 1rem;
+    }
+
+    .controls {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Tooltip for hovering on context bar segments -->
+<div id="barTooltip"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>How AI Context Windows Fill Up</h1>
+    <p class="subtitle">
+      Every message you send — and every response you get back — takes up space in the AI's memory window.
+    </p>
+  </div>
+
+  <div class="main-panel">
+    <div class="panel-header">
+      <span class="panel-title">Context Window</span>
+      <span class="token-counter normal" id="counter">120 / 1,200 tokens (10%)</span>
+    </div>
+
+    <div class="context-bar-container">
+      <div class="context-bar" id="barOuter">
+        <div class="grid-lines">
+          <div class="grid-line" style="left: 25%"></div>
+          <div class="grid-line" style="left: 50%"></div>
+          <div class="grid-line" style="left: 75%"></div>
+        </div>
+        <div id="barSegments"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot system"></div>
+        <span>System Instructions</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot user"></div>
+        <span>Your Messages</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot ai"></div>
+        <span>AI Responses</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot empty"></div>
+        <span>Available Space</span>
+      </div>
+    </div>
+
+    <div class="alert warning" id="warnBox">
+      Warning: Context window getting full. The AI will soon start losing earlier conversation.
+    </div>
+    <div class="alert error" id="critBox">
+      Context window nearly full. The AI is forgetting your early messages.
+    </div>
+  </div>
+
+  <div class="breakdown-panel" id="bdPanel">
+    <div class="breakdown-title">Token Cost Per Exchange</div>
+    <div id="bdRows"></div>
+    <div class="hint">Hover or click a row to highlight those messages below ↓</div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="chat-header">Conversation</div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-empty">Click "Send Next Message" to start the conversation</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-send" id="btnSend">Send Next Message</button>
+    <button class="btn btn-reset" id="btnReset">Reset</button>
+  </div>
+
+  <div class="takeaway" id="takeaway">
+    <strong>Key Takeaway:</strong> Every conversation has a finite window. The AI holds your messages <em>and</em> its own responses in that same space. Complex exchanges fill it faster. Once full, the AI loses your earlier context — which is why it seems to "forget."
+    <br><br>
+    This is why <strong>shorter, focused conversations</strong> often work better than one massive thread — and why clear, specific prompts matter.
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+var LIMIT = 1200;
+var SYSTEM_TOKENS = 120; // System instructions overhead
+var EX = [
+  { user: "Can you write me 5 Instagram captions for our waterfall hike tour? Keep it friendly and local.",
+    ai: "Here are 5 Instagram captions for your waterfall hike tour:\n\n1. Chase waterfalls with us - Hilo style\n2. Your next adventure is just a trail away...\n3. Locals know the best hidden falls\n4. Not your average Tuesday\n5. Bring your sense of wonder (we'll handle the rest)",
+    ut: 25, at: 195 },
+  { user: "Nice! But make #3 more playful and mention we're locally owned.",
+    ai: "Updated #3: We're born-and-raised Hilo - nobody finds the secret falls like we do",
+    ut: 18, at: 42 },
+  { user: "Now draft a short email to our partner hotel about a referral discount program. Professional but warm. 15% commission.",
+    ai: "Subject: Partnership Opportunity - Referral Program\n\nAloha [Hotel Name] team,\n\nWe'd like to explore a referral partnership. For every booking your front desk refers to our tours, we offer 15% commission per guest.\n\nWe'll provide brochures, a booking link, and a dedicated contact.\n\nWould you be open to a quick chat this week?\n\nMahalo,\n[Your name]\nHilo Adventure Tours",
+    ut: 35, at: 145 },
+  { user: "Actually, shorten that email to just 3 sentences.",
+    ai: "Aloha! We'd love to offer your guests 15% off our waterfall hike tours through a referral partnership. We'll provide brochures and a booking link - open to a quick chat this week?",
+    ut: 12, at: 48 },
+  { user: "Draft a full week of social media - 7 Instagram, 5 Facebook, 3 TikTok, plus monthly calendar.",
+    ai: "Here's your full content plan:\n\nINSTAGRAM (7 posts):\nMon: Behind-the-scenes trail prep\nTue: Guest spotlight / testimonial\nWed: Did-you-know nature fact\nThu: Tour highlight reel\nFri: Weekend booking CTA\nSat: Scenic photo with storytelling\nSun: Mahalo / community\n\nFACEBOOK (5 posts):\n[Detailed longer narratives...]\n\nTIKTOK (3 captions):\n[Short punchy hooks...]\n\nMONTHLY CALENDAR:\nWk1: Adventure  Wk2: Culture\nWk3: Testimonials  Wk4: Behind Scenes",
+    ut: 50, at: 230 },
+  { user: "Write a business plan section on sunset kayak expansion. Market analysis, pricing, competitors, staffing, year-one revenue.",
+    ai: "MARKET ANALYSIS:\nHawai'i Island activity tourism...\n[Demand, seasonality, demographics...]\n\nPRICING:\nBased on competitor benchmarking...\n[Tiers, group discounts, seasonal...]\n\nCOMPETITORS:\nThree operators currently offer...\n[Positioning, gaps...]\n\nSTAFFING:\nYear 1: 3 additional certified guides...\n[Timeline, training, costs...]\n\nREVENUE (Year 1):\nConservative: $145K\nModerate: $210K\nOptimistic: $285K\n[Monthly breakdown, assumptions...]",
+    ut: 42, at: 358 },
+];
+
+// ===== STATE =====
+var step = 0;
+var used = SYSTEM_TOKENS; // Start with system tokens
+var segs = [{ type: 'system', start: 0, tok: SYSTEM_TOKENS }]; // Include system segment
+var msgs = [];
+var activeIdx = -1; // which exchange is highlighted (-1 = none)
+var locked = false;  // true if user clicked to lock highlight
+var busy = false;
+
+// ===== HELPERS =====
+function ge(id) { return document.getElementById(id); }
+function trunc(t, n) { return t.length > n ? t.slice(0, n) + '...' : t; }
+
+// ===== RENDER: Context Bar =====
+function renderBar() {
+  var pct = Math.min(used / LIMIT * 100, 100);
+  var nf = pct > 75;
+  var cr = pct > 90;
+
+  ge('counter').textContent = used + ' / ' + LIMIT + ' tokens (' + Math.round(pct) + '%)';
+  ge('counter').className = 'token-counter ' + (cr ? 'critical' : nf ? 'warning' : 'normal');
+
+  ge('warnBox').style.display = (nf && !cr) ? 'block' : 'none';
+  ge('critBox').style.display = cr ? 'block' : 'none';
+
+  var h = '';
+  for (var i = 0; i < segs.length; i++) {
+    var s = segs[i];
+    var exchangeIndex = s.type === 'system' ? -1 : Math.floor((i - 1) / 2);
+    h += '<div class="bar-segment ' + s.type + '" ' +
+         'data-ei="' + exchangeIndex + '" ' +
+         'data-role="' + s.type + '" ' +
+         'style="left:' + (s.start / LIMIT * 100) + '%;width:' + (s.tok / LIMIT * 100) + '%"></div>';
+  }
+  ge('barSegments').innerHTML = h;
+
+  // Attach hover tooltip handlers after segments are rendered
+  attachBarHover();
+}
+
+// ===== HOVER: Context Bar Segments -> Tooltip =====
+function attachBarHover() {
+  var tooltip = ge('barTooltip');
+  if (!tooltip) return;
+
+  var segments = document.querySelectorAll('.bar-segment');
+  for (var i = 0; i < segments.length; i++) {
+    (function(seg) {
+      seg.addEventListener('mouseenter', function(e) {
+        var idx = parseInt(seg.getAttribute('data-ei'), 10);
+        var role = seg.getAttribute('data-role');
+
+        var txt = '';
+        var title = '';
+
+        if (role === 'system') {
+          title = '<div style="font-weight:700; margin-bottom:6px; color:#f8fafc;">System Instructions</div>';
+          txt = 'Base prompt and configuration that guides the AI behavior.';
+        } else {
+          var isUser = role === 'user';
+          if (idx >= 0 && EX[idx]) {
+            txt = isUser ? EX[idx].user : EX[idx].ai;
+            title = '<div style="font-weight:700; margin-bottom:6px; color:#f8fafc;">' +
+                    (isUser ? 'You' : 'AI') + ' (exchange ' + (idx + 1) + ')</div>';
+          }
+        }
+
+        tooltip.innerHTML = title + '<div style="white-space:pre-wrap;">' + trunc(txt, 420) + '</div>';
+        tooltip.style.display = 'block';
+
+        // Also highlight corresponding exchange (without locking)
+        if (!locked && idx >= 0) {
+          activeIdx = idx;
+          applyHighlight();
+        }
+      });
+
+      seg.addEventListener('mousemove', function(e) {
+        var pad = 14;
+        var x = e.clientX + pad;
+        var y = e.clientY + pad;
+
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+
+        var rect = tooltip.getBoundingClientRect();
+        var maxX = window.innerWidth - rect.width - 10;
+        var maxY = window.innerHeight - rect.height - 10;
+
+        if (x > maxX) x = Math.max(10, e.clientX - rect.width - pad);
+        if (y > maxY) y = Math.max(10, e.clientY - rect.height - pad);
+
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+      });
+
+      seg.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+        if (!locked) {
+          activeIdx = -1;
+          applyHighlight();
+        }
+      });
+    })(segments[i]);
+  }
+}
+
+// ===== RENDER: Chat Bubbles =====
+function renderChat() {
+  var body = ge('chatBody');
+  if (msgs.length === 0) {
+    body.innerHTML = '<div class="chat-empty">Click "Send Next Message" to start the conversation</div>';
+    return;
+  }
+  var h = '';
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    var ei = Math.floor(i / 2);
+    var side = m.u ? 'r' : 'l';
+    var cls = m.u ? 'user' : 'ai';
+    var lbl = m.u ? 'You' : 'AI';
+    var extra = m.fresh ? ' anim' : '';
+    h += '<div class="bwrap ' + side + extra + '" data-ei="' + ei + '">';
+    h += '<div class="bubble ' + cls + '"><div class="blbl">' + lbl + '</div>' + trunc(m.text, 200) + '</div>';
+    h += '</div>';
+  }
+  body.innerHTML = h;
+  body.scrollTop = body.scrollHeight;
+}
+
+// ===== RENDER: Breakdown Rows (and attach listeners!) =====
+function renderBreakdown() {
+  if (step === 0) { ge('bdPanel').style.display = 'none'; return; }
+  ge('bdPanel').style.display = 'block';
+
+  var container = ge('bdRows');
+  // Clear old content
+  container.innerHTML = '';
+
+  for (var i = 0; i < step; i++) {
+    var e = EX[i];
+    var tot = e.ut + e.at;
+    var bw = (tot / LIMIT * 100);
+
+    var row = document.createElement('div');
+    row.className = 'exchange-row';
+    row.setAttribute('data-idx', i);
+    row.innerHTML =
+      '<span class="exchange-number">' + (i + 1) + '</span>' +
+      '<div class="exchange-bar">' +
+        '<div class="exchange-bar-user" style="width:' + (e.ut / tot * bw) + '%"></div>' +
+        '<div class="exchange-bar-ai" style="width:' + (e.at / tot * bw) + '%"></div>' +
+      '</div>' +
+      '<span class="exchange-tokens">' + tot + ' tokens</span>';
+
+    // Attach listeners DIRECTLY to this row element
+    (function(idx, rowEl) {
+      rowEl.addEventListener('mouseenter', function() {
+        if (!locked) {
+          activeIdx = idx;
+          applyHighlight();
+        }
+      });
+      rowEl.addEventListener('mouseleave', function() {
+        if (!locked) {
+          activeIdx = -1;
+          applyHighlight();
+        }
+      });
+      rowEl.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        if (locked && activeIdx === idx) {
+          // Unlock
+          locked = false;
+          activeIdx = -1;
+        } else {
+          // Lock to this row
+          locked = true;
+          activeIdx = idx;
+        }
+        applyHighlight();
+      });
+    })(i, row);
+
+    container.appendChild(row);
+  }
+}
+
+// ===== APPLY HIGHLIGHT STATE =====
+function applyHighlight() {
+  // Highlight rows
+  var rows = document.querySelectorAll('.exchange-row');
+  for (var i = 0; i < rows.length; i++) {
+    var idx = parseInt(rows[i].getAttribute('data-idx'));
+    if (idx === activeIdx) {
+      rows[i].classList.add('lit');
+    } else {
+      rows[i].classList.remove('lit');
+    }
+  }
+
+  // Highlight chat bubbles
+  var wraps = document.querySelectorAll('.bwrap');
+  for (var i = 0; i < wraps.length; i++) {
+    var ei = parseInt(wraps[i].getAttribute('data-ei'));
+    wraps[i].classList.remove('dim', 'glow');
+    if (activeIdx >= 0) {
+      if (ei === activeIdx) {
+        wraps[i].classList.add('glow');
+      } else {
+        wraps[i].classList.add('dim');
+      }
+    }
+  }
+
+  // Auto-scroll to highlighted messages (within the chat pane only)
+  if (activeIdx >= 0) {
+    var chat = ge('chatBody');
+    var target = chat ? chat.querySelector('.bwrap[data-ei="' + activeIdx + '"]') : null;
+    if (chat && target) {
+      var y = target.offsetTop - (chat.clientHeight / 2) + (target.clientHeight / 2);
+      chat.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
+  }
+}
+
+// Click outside breakdown panel unlocks
+document.addEventListener('click', function(e) {
+  if (locked) {
+    var panel = ge('bdPanel');
+    if (!panel.contains(e.target)) {
+      locked = false;
+      activeIdx = -1;
+      applyHighlight();
+    }
+  }
+});
+
+// ===== SEND BUTTON =====
+ge('btnSend').addEventListener('click', function() {
+  if (step >= EX.length || busy) return;
+  busy = true;
+  locked = false;
+  activeIdx = -1;
+  applyHighlight();
+
+  var e = EX[step];
+  var uStart = used;
+  var aStart = uStart + e.ut;
+
+  // Show user message
+  for (var i = 0; i < msgs.length; i++) msgs[i].fresh = false;
+  msgs.push({ text: e.user, u: true, fresh: true });
+  segs.push({ type: 'user', start: uStart, tok: e.ut });
+  used = aStart;
+  renderBar();
+  renderChat();
+  renderBreakdown();
+  ge('btnSend').textContent = 'AI responding...';
+
+  // Show AI response after delay
+  setTimeout(function() {
+    for (var i = 0; i < msgs.length; i++) msgs[i].fresh = false;
+    msgs.push({ text: e.ai, u: false, fresh: true });
+    segs.push({ type: 'ai', start: aStart, tok: e.at });
+    used = aStart + e.at;
+    step++;
+    busy = false;
+
+    renderBar();
+    renderChat();
+    renderBreakdown();
+    ge('btnReset').style.display = 'inline-block';
+
+    if (step >= EX.length) {
+      ge('btnSend').disabled = true;
+      ge('btnSend').textContent = 'Context window full';
+      ge('takeaway').style.display = 'block';
+    } else {
+      ge('btnSend').textContent = 'Send Next Message';
+    }
+  }, 600);
+});
+
+// ===== RESET BUTTON =====
+ge('btnReset').addEventListener('click', function() {
+  step = 0;
+  used = SYSTEM_TOKENS;
+  segs = [{ type: 'system', start: 0, tok: SYSTEM_TOKENS }];
+  msgs = [];
+  activeIdx = -1;
+  locked = false;
+  busy = false;
+
+  renderBar();
+  renderChat();
+  renderBreakdown();
+
+  ge('btnSend').disabled = false;
+  ge('btnSend').textContent = 'Send Next Message';
+  ge('btnReset').style.display = 'none';
+  ge('takeaway').style.display = 'none';
+});
+
+// ===== INIT =====
+renderBar();
+renderChat();
+</script>
+</body>
+</html>

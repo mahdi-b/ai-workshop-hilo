@@ -1,0 +1,16 @@
+Prompt 1
+Summarize this spreadsheet. What programs does this organization run, and which one costs the most?
+
+Prompt 2 — 
+For each program, calculate the total cost per participant for the full year. Include all four cost categories. Which program is the most cost-effective?
+
+Prompt 3 — 
+Create a new Tab (should appear in the second positio) with a summary sheet that shows, for each program: total annual cost, total participants served, cost per participant, and cost per session. Use Excel formulas, not hardcoded numbers, so I can update the source data later. Make it look professional.
+
+
+Prompt 4
+Compare total spending by program against the grant funding in the Grants sheet. Which programs are underfunded? Are we spending money from the USDA grant on anything that violates its 'food purchase and distribution only' restriction?
+
+
+Prompt 5 
+Our board wants to know: if we could only keep three of the five programs next year, which three give us the best combination of community reach and cost efficiency? Show your reasoning.

@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Window Management — AI Memory Visualization</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Main Panel */
+  .main-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+  }
+
+  .token-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .token-counter.normal { color: var(--accent-blue); }
+  .token-counter.warning { color: var(--accent-amber); background: #fef3c7; border-color: #fbbf24; }
+  .token-counter.critical { color: var(--accent-red); background: #fee2e2; border-color: #f87171; }
+
+  /* Context Bar */
+  .context-bar-container {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .context-bar {
+    height: 60px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .context-segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .context-segment.system {
+    background: var(--text-tertiary);
+  }
+
+  .context-segment.user {
+    background: var(--accent-blue);
+  }
+
+  .context-segment.ai {
+    background: var(--accent-purple);
+  }
+
+  .context-segment.compacted {
+    background: var(--accent-green);
+  }
+
+  .context-segment:hover {
+    opacity: 0.8;
+  }
+
+  /* Grid Lines */
+  .grid-lines {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-strong);
+    opacity: 0.5;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .legend-dot.system { background: var(--text-tertiary); }
+  .legend-dot.user { background: var(--accent-blue); }
+  .legend-dot.ai { background: var(--accent-purple); }
+  .legend-dot.compacted { background: var(--accent-green); }
+  .legend-dot.empty { background: var(--bg-tertiary); border: 1px solid var(--border-strong); }
+
+  /* Alerts */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    display: none;
+  }
+
+  .alert.warning {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+  }
+
+  .alert.error {
+    background: #fee2e2;
+    border: 1px solid #f87171;
+    color: #991b1b;
+  }
+
+  .alert.success {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+  }
+
+  /* Token Breakdown */
+  .breakdown-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: none;
+  }
+
+  .breakdown-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .exchange-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .exchange-item:hover {
+    background: var(--bg-secondary);
+  }
+
+  .exchange-item.active {
+    background: var(--bg-tertiary);
+    box-shadow: inset 0 0 0 2px var(--accent-blue);
+  }
+
+  .exchange-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    width: 40px;
+  }
+
+  .exchange-bar {
+    flex: 1;
+    height: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .exchange-bar-user {
+    background: var(--accent-blue);
+  }
+
+  .exchange-bar-ai {
+    background: var(--accent-purple);
+  }
+
+  .exchange-bar-compact {
+    background: var(--accent-green);
+  }
+
+  .exchange-tokens {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    width: 80px;
+    text-align: right;
+  }
+
+  /* Chat Window */
+  .chat-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .chat-header {
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  .chat-body {
+    height: 400px;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: white;
+  }
+
+  .chat-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-body::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+  }
+
+  .chat-body::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+
+  .chat-empty {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 4rem 0;
+  }
+
+  /* Messages */
+  .message {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .message.user {
+    flex-direction: row-reverse;
+  }
+
+  .message.dimmed {
+    opacity: 0.3;
+  }
+
+  .message.highlighted .message-content {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .message.compacted {
+    opacity: 0.5;
+  }
+
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .message.user .message-avatar {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .message.ai .message-avatar {
+    background: var(--accent-purple);
+    color: white;
+  }
+
+  .message-content {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    transition: all 0.2s ease;
+  }
+
+  .message.user .message-content {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .message.ai .message-content {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+  }
+
+  .message-badge {
+    display: inline-block;
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--accent-green);
+    color: white;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .btn {
+    padding: 0.625rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .btn-primary {
+    background: var(--accent-blue);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-primary:disabled {
+    background: var(--text-tertiary);
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-secondary);
+  }
+
+  /* Key Takeaway */
+  .takeaway-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent-blue);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+  }
+
+  .takeaway-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .takeaway-content {
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    background: var(--text-primary);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    max-width: 320px;
+    pointer-events: none;
+    display: none;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+  }
+
+  #tooltip-header {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  #tooltip-tokens {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+  }
+
+  #tooltip-content {
+    line-height: 1.5;
+  }
+
+  /* Animations */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message {
+    animation: slideIn 0.3s ease;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body {
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+    }
+
+    .message-content {
+      max-width: 85%;
+    }
+
+    .legend {
+      gap: 1rem;
+    }
+
+    .controls {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="tooltip">
+  <div id="tooltip-header"></div>
+  <div id="tooltip-tokens"></div>
+  <div id="tooltip-content"></div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>Context Window Management</h1>
+    <p class="subtitle">
+      Understanding how AI models manage conversational memory and handle token limits through intelligent compression.
+    </p>
+  </div>
+
+  <div class="main-panel">
+    <div class="panel-header">
+      <span class="panel-title">Token Allocation</span>
+      <span class="token-counter normal" id="tokenCounter">0 / 1,000 tokens (0%)</span>
+    </div>
+
+    <div class="context-bar-container">
+      <div class="context-bar" id="contextBar">
+        <div class="grid-lines">
+          <div class="grid-line" style="left: 25%"></div>
+          <div class="grid-line" style="left: 50%"></div>
+          <div class="grid-line" style="left: 75%"></div>
+        </div>
+        <div id="contextSegments"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot system"></div>
+        <span>System Instructions</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot user"></div>
+        <span>User Messages</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot ai"></div>
+        <span>AI Responses</span>
+      </div>
+      <div class="legend-item" id="legendCompact" style="display:none">
+        <div class="legend-dot compacted"></div>
+        <span>Compressed History</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot empty"></div>
+        <span>Available</span>
+      </div>
+    </div>
+
+    <div class="alert warning" id="warningAlert">
+      Context window approaching capacity. System may need to compress earlier messages.
+    </div>
+    <div class="alert error" id="errorAlert">
+      Context window at critical capacity.
+    </div>
+    <div class="alert success" id="successAlert">
+      Context successfully compressed. Earlier messages summarized to free space.
+    </div>
+  </div>
+
+  <div class="breakdown-panel" id="breakdownPanel">
+    <div class="breakdown-title">Token Distribution by Exchange</div>
+    <div id="breakdownItems"></div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="chat-header">Conversation Stream</div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-empty">No messages yet. Click "Send Next Message" to begin.</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="sendBtn">Send Next Message</button>
+    <button class="btn btn-secondary" id="resetBtn" style="display:none">Reset Demo</button>
+  </div>
+
+  <div class="takeaway-panel" id="takeawayPanel">
+    <div class="takeaway-title">Key Insight</div>
+    <div class="takeaway-content">
+      AI models operate within fixed context windows. When these fill up, the system must compress earlier exchanges into summaries, preserving essential information while losing specific details. This is why maintaining focused, well-structured conversations yields better results than lengthy, meandering discussions.
+    </div>
+  </div>
+</div>
+
+<script>
+// Configuration
+const CONFIG = {
+  maxTokens: 1000,
+  systemTokens: 120,
+  messageOverhead: 6,
+  compressionThreshold: 0.85,
+  targetFreeSpace: 0.4,
+  summaryBaseTokens: 70,
+  summaryGrowthTokens: 15
+};
+
+// Sample conversation data
+const CONVERSATIONS = [
+  {
+    user: "Can you write me 5 Instagram captions for our waterfall hike tour? Keep it friendly and local.",
+    ai: "Here are 5 Instagram captions for your waterfall hike tour:\n\n1. Chase waterfalls with us - Hilo style\n2. Your next adventure is just a trail away...\n3. Locals know the best hidden falls\n4. Not your average Tuesday\n5. Bring your sense of wonder (we'll handle the rest)",
+    userTokens: 25,
+    aiTokens: 195
+  },
+  {
+    user: "Nice! But make #3 more playful and mention we're locally owned.",
+    ai: "Updated #3: We're born-and-raised Hilo - nobody finds the secret falls like we do",
+    userTokens: 18,
+    aiTokens: 42
+  },
+  {
+    user: "Now draft a short email to our partner hotel about a referral discount program. Professional but warm. 15% commission.",
+    ai: "Subject: Partnership Opportunity - Referral Program\n\nAloha [Hotel Name] team,\n\nWe'd like to explore a referral partnership. For every booking your front desk refers to our tours, we offer 15% commission per guest.\n\nWe'll provide brochures, a booking link, and a dedicated contact.\n\nWould you be open to a quick chat this week?\n\nMahalo,\n[Your name]\nHilo Adventure Tours",
+    userTokens: 35,
+    aiTokens: 145
+  },
+  {
+    user: "Actually, shorten that email to just 3 sentences.",
+    ai: "Aloha! We'd love to offer your guests 15% off our waterfall hike tours through a referral partnership. We'll provide brochures and a booking link - open to a quick chat this week?",
+    userTokens: 12,
+    aiTokens: 48
+  },
+  {
+    user: "Draft a full week of social media - 7 Instagram, 5 Facebook, 3 TikTok, plus monthly calendar.",
+    ai: "Here's your full content plan:\n\nINSTAGRAM (7 posts):\nMon: Behind-the-scenes trail prep\nTue: Guest spotlight / testimonial\nWed: Did-you-know nature fact\nThu: Tour highlight reel\nFri: Weekend booking CTA\nSat: Scenic photo with storytelling\nSun: Mahalo / community\n\nFACEBOOK (5 posts):\n[Detailed content strategy...]\n\nTIKTOK (3 videos):\n[Short-form video concepts...]\n\nMONTHLY CALENDAR:\nWeek 1: Adventure focus\nWeek 2: Culture & heritage\nWeek 3: Customer stories\nWeek 4: Behind the scenes",
+    userTokens: 50,
+    aiTokens: 230
+  },
+  {
+    user: "Write a business plan section on sunset kayak expansion. Market analysis, pricing, competitors, staffing, year-one revenue.",
+    ai: "SUNSET KAYAK EXPANSION PLAN\n\nMARKET ANALYSIS:\n• Hawaii Island adventure tourism: $450M annual market\n• Sunset experiences: 35% premium over daytime activities\n• Target demographic: Couples, photographers, luxury travelers\n• Seasonality: 85% occupancy May-September, 60% October-April\n\nPRICING STRATEGY:\n• Standard (2 hours): $149/person\n• Premium (includes dinner): $249/person\n• Private tours: $599/couple\n• Group discounts: 10% for 6+\n\nCOMPETITOR LANDSCAPE:\n• 3 existing operators\n• Our differentiator: Local guides, smaller groups, premium equipment\n\nSTAFFING REQUIREMENTS:\n• 3 certified guides (Year 1)\n• 1 operations coordinator (Month 3)\n• Training investment: $15,000\n\nYEAR ONE PROJECTIONS:\n• Conservative: $145,000\n• Realistic: $210,000\n• Optimistic: $285,000",
+    userTokens: 42,
+    aiTokens: 358
+  }
+];
+
+// State management
+let state = {
+  currentStep: 0,
+  usedTokens: CONFIG.systemTokens,
+  segments: [{ type: 'system', start: 0, tokens: CONFIG.systemTokens, index: -1 }],
+  messages: [],
+  isCompacted: false,
+  compactedUntil: -1,
+  compressionCount: 0,
+  summaryTokens: CONFIG.summaryBaseTokens,
+  activeIndex: -1,
+  isLocked: false,
+  isBusy: false
+};
+
+// Helper functions
+const getElement = id => document.getElementById(id);
+const truncateText = (text, maxLength) => text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+
+// Render context bar
+function renderContextBar() {
+  const percentage = Math.min(state.usedTokens / CONFIG.maxTokens * 100, 100);
+  const isWarning = percentage > 75;
+  const isCritical = percentage > 90;
+
+  const counter = getElement('tokenCounter');
+  counter.textContent = `${state.usedTokens} / ${CONFIG.maxTokens} tokens (${Math.round(percentage)}%)`;
+  counter.className = `token-counter ${isCritical ? 'critical' : isWarning ? 'warning' : 'normal'}`;
+
+  let html = '';
+  state.segments.forEach(segment => {
+    const left = (segment.start / CONFIG.maxTokens * 100);
+    const width = (segment.tokens / CONFIG.maxTokens * 100);
+    html += `<div class="context-segment ${segment.type}"
+             data-type="${segment.type}"
+             data-index="${segment.index}"
+             data-tokens="${segment.tokens}"
+             style="left:${left}%;width:${width}%"></div>`;
+  });
+
+  getElement('contextSegments').innerHTML = html;
+  attachSegmentEvents();
+
+  getElement('warningAlert').style.display = (!state.isCompacted && isWarning && !isCritical) ? 'block' : 'none';
+  getElement('errorAlert').style.display = isCritical ? 'block' : 'none';
+}
+
+// Attach hover events to segments
+function attachSegmentEvents() {
+  const tooltip = getElement('tooltip');
+  const segments = document.querySelectorAll('.context-segment');
+
+  segments.forEach(segment => {
+    segment.addEventListener('mouseenter', e => {
+      const type = segment.dataset.type;
+      const index = parseInt(segment.dataset.index);
+      const tokens = parseInt(segment.dataset.tokens);
+
+      let header = '';
+      let content = '';
+
+      if (type === 'system') {
+        header = 'System Instructions';
+        content = 'Base prompt and configuration that guides the AI behavior.';
+      } else if (type === 'compacted') {
+        header = 'Compressed History';
+        content = 'Summarized version of earlier conversation to save space.';
+      } else if (type === 'user' && index >= 0) {
+        header = `User Message ${index + 1}`;
+        content = CONVERSATIONS[index]?.user || '';
+      } else if (type === 'ai' && index >= 0) {
+        header = `AI Response ${index + 1}`;
+        content = CONVERSATIONS[index]?.ai || '';
+      }
+
+      getElement('tooltip-header').textContent = header;
+      getElement('tooltip-tokens').textContent = `${tokens} tokens`;
+      getElement('tooltip-content').textContent = truncateText(content, 200);
+
+      tooltip.style.display = 'block';
+
+      if (!state.isLocked) {
+        state.activeIndex = type === 'compacted' ? 'compact' : index;
+        highlightElements();
+      }
+    });
+
+    segment.addEventListener('mousemove', e => {
+      const x = Math.min(e.clientX + 10, window.innerWidth - 340);
+      const y = Math.min(e.clientY + 10, window.innerHeight - 150);
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    });
+
+    segment.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+      if (!state.isLocked) {
+        state.activeIndex = -1;
+        highlightElements();
+      }
+    });
+  });
+}
+
+// Render breakdown panel
+function renderBreakdown() {
+  if (state.currentStep === 0) {
+    getElement('breakdownPanel').style.display = 'none';
+    return;
+  }
+
+  getElement('breakdownPanel').style.display = 'block';
+  const container = getElement('breakdownItems');
+  let html = '';
+
+  if (state.isCompacted) {
+    const width = (state.summaryTokens / CONFIG.maxTokens * 100);
+    html += `
+      <div class="exchange-item" data-index="compact">
+        <span class="exchange-number">1-3</span>
+        <div class="exchange-bar">
+          <div class="exchange-bar-compact" style="width:${width}%"></div>
+        </div>
+        <span class="exchange-tokens">${state.summaryTokens} tok</span>
+      </div>`;
+  }
+
+  const startIndex = state.isCompacted ? 3 : 0;
+  for (let i = startIndex; i < state.currentStep; i++) {
+    const conv = CONVERSATIONS[i];
+    const total = conv.userTokens + conv.aiTokens;
+    const userWidth = (conv.userTokens / total * 100);
+    const aiWidth = (conv.aiTokens / total * 100);
+
+    html += `
+      <div class="exchange-item" data-index="${i}">
+        <span class="exchange-number">#${i + 1}</span>
+        <div class="exchange-bar">
+          <div class="exchange-bar-user" style="width:${userWidth}%"></div>
+          <div class="exchange-bar-ai" style="width:${aiWidth}%"></div>
+        </div>
+        <span class="exchange-tokens">${total} tok</span>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  attachBreakdownEvents();
+}
+
+// Attach breakdown events
+function attachBreakdownEvents() {
+  document.querySelectorAll('.exchange-item').forEach(item => {
+    item.addEventListener('mouseenter', () => {
+      if (!state.isLocked) {
+        const index = item.dataset.index;
+        state.activeIndex = index === 'compact' ? 'compact' : parseInt(index);
+        highlightElements();
+      }
+    });
+
+    item.addEventListener('mouseleave', () => {
+      if (!state.isLocked) {
+        state.activeIndex = -1;
+        highlightElements();
+      }
+    });
+
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      const index = item.dataset.index;
+      const newIndex = index === 'compact' ? 'compact' : parseInt(index);
+
+      if (state.isLocked && state.activeIndex === newIndex) {
+        state.isLocked = false;
+        state.activeIndex = -1;
+      } else {
+        state.isLocked = true;
+        state.activeIndex = newIndex;
+      }
+      highlightElements();
+    });
+  });
+}
+
+// Highlight active elements
+function highlightElements() {
+  // Highlight breakdown items
+  document.querySelectorAll('.exchange-item').forEach(item => {
+    const index = item.dataset.index;
+    const itemIndex = index === 'compact' ? 'compact' : parseInt(index);
+    item.classList.toggle('active', state.activeIndex === itemIndex);
+  });
+
+  // Highlight messages
+  document.querySelectorAll('.message').forEach(message => {
+    const msgIndex = parseInt(message.dataset.index);
+    message.classList.remove('dimmed', 'highlighted');
+
+    if (state.activeIndex !== -1) {
+      if (state.activeIndex === 'compact') {
+        message.classList.add('dimmed');
+      } else if (msgIndex === state.activeIndex) {
+        message.classList.add('highlighted');
+      } else {
+        message.classList.add('dimmed');
+      }
+    }
+  });
+}
+
+// Render chat messages
+function renderChat() {
+  const chatBody = getElement('chatBody');
+
+  if (state.messages.length === 0) {
+    chatBody.innerHTML = '<div class="chat-empty">No messages yet. Click "Send Next Message" to begin.</div>';
+    return;
+  }
+
+  let html = '';
+  state.messages.forEach(msg => {
+    const messageClass = `message ${msg.isUser ? 'user' : 'ai'}${msg.isCompacted ? ' compacted' : ''}`;
+    const avatar = msg.isUser ? 'U' : 'AI';
+    const badge = msg.isCompacted ? '<span class="message-badge">Compressed</span>' : '';
+
+    html += `
+      <div class="${messageClass}" data-index="${msg.index}">
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-content">
+          ${truncateText(msg.text, 200)}${badge}
+        </div>
+      </div>`;
+  });
+
+  chatBody.innerHTML = html;
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+// Check if compression is needed
+function needsCompression(index) {
+  const conv = CONVERSATIONS[index];
+  const needed = (conv.userTokens + CONFIG.messageOverhead) + (conv.aiTokens + CONFIG.messageOverhead);
+  const projected = state.usedTokens + needed;
+  return projected > (CONFIG.maxTokens * CONFIG.compressionThreshold);
+}
+
+// Perform compression
+function performCompression() {
+  state.compressionCount++;
+  state.compactedUntil = 2;
+  state.isCompacted = true;
+  state.summaryTokens = CONFIG.summaryBaseTokens + (state.compressionCount * CONFIG.summaryGrowthTokens);
+
+  // Mark messages as compacted
+  state.messages.forEach(msg => {
+    if (msg.index >= 0 && msg.index <= 2) {
+      msg.isCompacted = true;
+    }
+  });
+
+  // Rebuild segments
+  const newSegments = [
+    { type: 'system', start: 0, tokens: CONFIG.systemTokens, index: -1 },
+    { type: 'compacted', start: CONFIG.systemTokens, tokens: state.summaryTokens, index: -1 }
+  ];
+
+  let position = CONFIG.systemTokens + state.summaryTokens;
+  state.segments.forEach(segment => {
+    if (segment.type === 'system' || segment.type === 'compacted') return;
+    if (segment.index !== undefined && segment.index >= 0 && segment.index <= 2) return;
+
+    newSegments.push({
+      type: segment.type,
+      start: position,
+      tokens: segment.tokens,
+      index: segment.index
+    });
+    position += segment.tokens;
+  });
+
+  state.segments = newSegments;
+  state.usedTokens = position;
+}
+
+// Handle send button click
+getElement('sendBtn').addEventListener('click', () => {
+  if (state.currentStep >= CONVERSATIONS.length || state.isBusy) return;
+
+  state.isBusy = true;
+  state.isLocked = false;
+  state.activeIndex = -1;
+  highlightElements();
+
+  const conv = CONVERSATIONS[state.currentStep];
+  const willCompress = needsCompression(state.currentStep) && !state.isCompacted;
+
+  // Add user message
+  state.messages.push({
+    text: conv.user,
+    isUser: true,
+    index: state.currentStep,
+    isCompacted: false
+  });
+
+  state.segments.push({
+    type: 'user',
+    start: state.usedTokens,
+    tokens: conv.userTokens + CONFIG.messageOverhead,
+    index: state.currentStep
+  });
+  state.usedTokens += conv.userTokens + CONFIG.messageOverhead;
+
+  renderContextBar();
+  renderChat();
+  renderBreakdown();
+
+  const sendBtn = getElement('sendBtn');
+
+  if (willCompress) {
+    sendBtn.textContent = 'Compressing...';
+
+    setTimeout(() => {
+      performCompression();
+      getElement('successAlert').style.display = 'block';
+      getElement('legendCompact').style.display = 'flex';
+      renderContextBar();
+      renderChat();
+      renderBreakdown();
+
+      sendBtn.textContent = 'AI Responding...';
+
+      setTimeout(() => {
+        state.messages.push({
+          text: conv.ai,
+          isUser: false,
+          index: state.currentStep,
+          isCompacted: false
+        });
+
+        state.segments.push({
+          type: 'ai',
+          start: state.usedTokens,
+          tokens: conv.aiTokens + CONFIG.messageOverhead,
+          index: state.currentStep
+        });
+        state.usedTokens += conv.aiTokens + CONFIG.messageOverhead;
+        state.currentStep++;
+        state.isBusy = false;
+
+        renderContextBar();
+        renderChat();
+        renderBreakdown();
+
+        getElement('resetBtn').style.display = 'inline-block';
+        getElement('successAlert').style.display = 'none';
+
+        if (state.currentStep >= CONVERSATIONS.length) {
+          sendBtn.disabled = true;
+          sendBtn.textContent = 'Demo Complete';
+          getElement('takeawayPanel').style.display = 'block';
+        } else {
+          sendBtn.textContent = 'Send Next Message';
+        }
+      }, 800);
+    }, 1000);
+  } else {
+    sendBtn.textContent = 'AI Responding...';
+
+    setTimeout(() => {
+      state.messages.push({
+        text: conv.ai,
+        isUser: false,
+        index: state.currentStep,
+        isCompacted: false
+      });
+
+      state.segments.push({
+        type: 'ai',
+        start: state.usedTokens,
+        tokens: conv.aiTokens + CONFIG.messageOverhead,
+        index: state.currentStep
+      });
+      state.usedTokens += conv.aiTokens + CONFIG.messageOverhead;
+      state.currentStep++;
+      state.isBusy = false;
+
+      renderContextBar();
+      renderChat();
+      renderBreakdown();
+
+      getElement('resetBtn').style.display = 'inline-block';
+
+      if (state.currentStep >= CONVERSATIONS.length) {
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Demo Complete';
+        getElement('takeawayPanel').style.display = 'block';
+      } else {
+        sendBtn.textContent = 'Send Next Message';
+      }
+    }, 600);
+  }
+});
+
+// Handle reset button
+getElement('resetBtn').addEventListener('click', () => {
+  state = {
+    currentStep: 0,
+    usedTokens: CONFIG.systemTokens,
+    segments: [{ type: 'system', start: 0, tokens: CONFIG.systemTokens, index: -1 }],
+    messages: [],
+    isCompacted: false,
+    compactedUntil: -1,
+    compressionCount: 0,
+    summaryTokens: CONFIG.summaryBaseTokens,
+    activeIndex: -1,
+    isLocked: false,
+    isBusy: false
+  };
+
+  const sendBtn = getElement('sendBtn');
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Send Next Message';
+
+  getElement('resetBtn').style.display = 'none';
+  getElement('takeawayPanel').style.display = 'none';
+  getElement('legendCompact').style.display = 'none';
+  getElement('successAlert').style.display = 'none';
+
+  renderContextBar();
+  renderChat();
+  renderBreakdown();
+});
+
+// Handle clicks outside to unlock
+document.addEventListener('click', e => {
+  if (state.isLocked && !e.target.closest('.exchange-item')) {
+    state.isLocked = false;
+    state.activeIndex = -1;
+    highlightElements();
+  }
+});
+
+// Initialize
+renderContextBar();
+renderChat();
+</script>
+
+</body>
+</html>

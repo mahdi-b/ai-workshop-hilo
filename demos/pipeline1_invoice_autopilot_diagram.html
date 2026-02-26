@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflow Pipeline — Invoice Processing Automation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=SF+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --accent-primary: #2563eb;
+    --accent-secondary: #7c3aed;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-info: #06b6d4;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 3rem 2rem;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Pipeline */
+  .pipeline-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 3rem;
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+
+  /* Progress Line */
+  .progress-line {
+    position: absolute;
+    top: 50%;
+    left: 5%;
+    right: 5%;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .progress-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: var(--accent-primary);
+    animation: progressFill 3s ease-out forwards;
+  }
+
+  @keyframes progressFill {
+    to { width: 100%; }
+  }
+
+  /* Nodes */
+  .node {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .node-content {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 180px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .node-content:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .node-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 1rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    position: relative;
+  }
+
+  .node:nth-child(1) .node-icon { background: #dbeafe; color: #2563eb; }
+  .node:nth-child(2) .node-icon { background: #ede9fe; color: #7c3aed; }
+  .node:nth-child(3) .node-icon { background: #d1fae5; color: #10b981; }
+  .node:nth-child(4) .node-icon { background: #fed7aa; color: #f59e0b; }
+  .node:nth-child(5) .node-icon { background: #cffafe; color: #06b6d4; }
+
+  .node-icon::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-primary);
+    border-radius: 50%;
+  }
+
+  .node-label {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .node-description {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .node-tech {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-tertiary);
+  }
+
+  /* Connector Arrows */
+  .connector {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'SF Mono', monospace;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    letter-spacing: 0.1em;
+    z-index: 2;
+  }
+
+  .connector:nth-of-type(1) { left: 17%; }
+  .connector:nth-of-type(2) { left: 37%; }
+  .connector:nth-of-type(3) { left: 57%; }
+  .connector:nth-of-type(4) { left: 77%; }
+
+  .connector::after {
+    content: '→';
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+    color: var(--accent-primary);
+  }
+
+  /* Data Preview */
+  .data-section {
+    margin-bottom: 3rem;
+  }
+
+  .data-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .data-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-tertiary);
+  }
+
+  .data-table {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .data-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-row:last-child {
+    border-bottom: none;
+  }
+
+  .data-cell {
+    padding: 1rem;
+    font-size: 0.875rem;
+    border-right: 1px solid var(--border);
+  }
+
+  .data-cell:last-child {
+    border-right: none;
+  }
+
+  .data-cell.header {
+    background: var(--bg-primary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+  }
+
+  .data-cell.value {
+    font-family: 'SF Mono', monospace;
+    color: var(--text-primary);
+  }
+
+  .data-cell.highlight {
+    color: var(--accent-primary);
+    font-weight: 600;
+  }
+
+  /* Bottom CTA */
+  .cta-section {
+    text-align: center;
+    padding: 3rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .cta-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .cta-description {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .cta-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 2rem;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .node {
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  .node:nth-child(1) { animation-delay: 0.1s; }
+  .node:nth-child(2) { animation-delay: 0.2s; }
+  .node:nth-child(3) { animation-delay: 0.3s; }
+  .node:nth-child(4) { animation-delay: 0.4s; }
+  .node:nth-child(5) { animation-delay: 0.5s; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .pipeline {
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .progress-line {
+      width: 2px;
+      height: 80%;
+      left: 50%;
+      top: 10%;
+      transform: translateX(-50%);
+    }
+
+    .progress-line::after {
+      width: 100%;
+      height: 0;
+      animation: progressFillVertical 3s ease-out forwards;
+    }
+
+    @keyframes progressFillVertical {
+      to { height: 100%; }
+    }
+
+    .connector {
+      display: none;
+    }
+
+    .data-row {
+      grid-template-columns: 1fr;
+    }
+
+    .data-cell {
+      border-right: none;
+    }
+
+    .data-cell:not(:last-child) {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cta-stats {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Invoice Processing Pipeline</h1>
+    <p class="subtitle">
+      Automated workflow that transforms email attachments into organized financial data
+    </p>
+  </div>
+
+  <div class="pipeline-container">
+    <div class="pipeline">
+      <div class="progress-line"></div>
+
+      <!-- Node 1: Trigger -->
+      <div class="node">
+        <div class="node-content">
+          <div class="node-icon">📨</div>
+          <div class="node-label">Email Trigger</div>
+          <div class="node-description">Monitors inbox for new invoices</div>
+          <div class="node-tech">Gmail API</div>
+        </div>
+      </div>
+
+      <!-- Node 2: Extract -->
+      <div class="node">
+        <div class="node-content">
+          <div class="node-icon">🤖</div>
+          <div class="node-label">AI Extraction</div>
+          <div class="node-description">Intelligently parses PDF content</div>
+          <div class="node-tech">Claude API</div>
+        </div>
+      </div>
+
+      <!-- Node 3: Store -->
+      <div class="node">
+        <div class="node-content">
+          <div class="node-icon">💾</div>
+          <div class="node-label">Data Storage</div>
+          <div class="node-description">Structures & saves to database</div>
+          <div class="node-tech">Sheets API</div>
+        </div>
+      </div>
+
+      <!-- Node 4: Schedule -->
+      <div class="node">
+        <div class="node-content">
+          <div class="node-icon">📅</div>
+          <div class="node-label">Smart Scheduling</div>
+          <div class="node-description">Creates payment reminders</div>
+          <div class="node-tech">Calendar API</div>
+        </div>
+      </div>
+
+      <!-- Node 5: Complete -->
+      <div class="node">
+        <div class="node-content">
+          <div class="node-icon">✓</div>
+          <div class="node-label">Automated</div>
+          <div class="node-description">Zero manual intervention</div>
+          <div class="node-tech">Complete</div>
+        </div>
+      </div>
+
+      <!-- Connectors -->
+      <div class="connector">PDF</div>
+      <div class="connector">JSON</div>
+      <div class="connector">Data</div>
+      <div class="connector">Event</div>
+    </div>
+  </div>
+
+  <div class="data-section">
+    <div class="data-header">
+      <div class="data-title">Extracted Data Example</div>
+    </div>
+    <div class="data-table">
+      <div class="data-row">
+        <div class="data-cell header">Date</div>
+        <div class="data-cell header">Vendor</div>
+        <div class="data-cell header">Invoice #</div>
+        <div class="data-cell header">Amount</div>
+        <div class="data-cell header">Due Date</div>
+        <div class="data-cell header">Category</div>
+        <div class="data-cell header">Status</div>
+      </div>
+      <div class="data-row">
+        <div class="data-cell value">2026-02-14</div>
+        <div class="data-cell value">Acme Corp</div>
+        <div class="data-cell value">INV-2026-1042</div>
+        <div class="data-cell value highlight">$3,847.50</div>
+        <div class="data-cell value">2026-03-14</div>
+        <div class="data-cell value">Software</div>
+        <div class="data-cell value">Pending</div>
+      </div>
+      <div class="data-row">
+        <div class="data-cell value">2026-02-12</div>
+        <div class="data-cell value">TechSupplies Inc</div>
+        <div class="data-cell value">INV-2026-0988</div>
+        <div class="data-cell value highlight">$1,295.00</div>
+        <div class="data-cell value">2026-03-01</div>
+        <div class="data-cell value">Hardware</div>
+        <div class="data-cell value">Scheduled</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <div class="cta-title">Transform Your Invoice Processing</div>
+    <p class="cta-description">
+      Built with n8n workflow automation platform. No coding required.
+    </p>
+    <div class="cta-stats">
+      <div class="stat">
+        <div class="stat-value">95%</div>
+        <div class="stat-label">Time Saved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Manual Steps</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1hr</div>
+        <div class="stat-label">Setup Time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Add interactive hover effects
+document.querySelectorAll('.node-content').forEach(node => {
+  node.addEventListener('mouseenter', function() {
+    this.style.transform = 'translateY(-8px) scale(1.05)';
+  });
+
+  node.addEventListener('mouseleave', function() {
+    this.style.transform = 'translateY(0) scale(1)';
+  });
+});
+
+// Simulate data flow animation
+let currentStep = 0;
+const nodes = document.querySelectorAll('.node-icon');
+
+function animateFlow() {
+  nodes.forEach(node => {
+    node.style.transform = 'scale(1)';
+    node.style.opacity = '1';
+  });
+
+  if (currentStep < nodes.length) {
+    nodes[currentStep].style.transform = 'scale(1.2)';
+    nodes[currentStep].style.transition = 'all 0.3s ease';
+    currentStep = (currentStep + 1) % nodes.length;
+  }
+}
+
+// Run animation every 2 seconds
+setInterval(animateFlow, 2000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Demystified - Workshop Resources</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: white;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.95;
+        }
+
+        .workshop-info {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .workshop-info span {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        /* Interactive Demos */
+        .demos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .demo-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .demo-card .demo-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .demo-card .demo-body {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .demo-card .demo-description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+
+        .demo-card .demo-link {
+            display: inline-block;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.3s;
+        }
+
+        .demo-card .demo-link:hover {
+            gap: 0.75rem;
+        }
+
+        /* Resources Section */
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .resource-card {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .resource-card h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .resource-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .resource-card li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .resource-card li:last-child {
+            border-bottom: none;
+        }
+
+        .resource-card a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .resource-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        /* Tips Section */
+        .tips-container {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .tips-container h3 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+
+        .tips-container ul {
+            color: #78350f;
+            margin-left: 1.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--text-dark);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+            text-align: center;
+        }
+
+        footer p {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .demos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <div class="logo">AI Workshop Resources</div>
+            <ul class="nav-links">
+                <li><a href="#slides">Slides</a></li>
+                <li><a href="#demos">Demos</a></li>
+                <li><a href="#resources">Resources</a></li>
+                <li><a href="#tips">Getting Started</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>AI Demystified</h1>
+            <p class="subtitle">Workshop Resources & Interactive Demos</p>
+            <div class="workshop-info">
+                <span>Mahdi Belcaid • UH Mānoa ICS</span>
+                <span>February 27, 2026</span>
+                <span>Hilo, Hawaii</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Workshop Slides Section -->
+        <section id="slides" style="margin-bottom: 3rem;">
+            <h2>Workshop Slides</h2>
+            <div style="background: var(--bg-light); border: 2px dashed var(--border); border-radius: 0.75rem; padding: 3rem; text-align: center;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" stroke-width="2" style="margin: 0 auto 1rem;">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <line x1="8" y1="10" x2="16" y2="10"/>
+                    <line x1="8" y1="14" x2="12" y2="14"/>
+                </svg>
+                <h3 style="color: var(--text-light); margin-bottom: 0.5rem;">Slides Coming Soon</h3>
+                <p style="color: var(--text-light);">
+                    The workshop presentation slides will be available here after the session.
+                </p>
+            </div>
+        </section>
+
+        <!-- Interactive Demos Section -->
+        <section id="demos">
+            <h2>Interactive Demonstrations</h2>
+            <p style="color: var(--text-light); margin-bottom: 2rem;">
+                Explore these interactive tools to experiment with the AI concepts we discussed in the workshop.
+            </p>
+
+            <div class="demos-grid">
+                <div class="demo-card">
+                    <div class="demo-header">Context Window Visualization</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            Experiment with how AI models process and maintain context. See how information flows through memory limits.
+                        </p>
+                        <a href="demos/context_window_simulator_hover_tooltip_fixed.html" class="demo-link">
+                            Open Demo
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">Context Compaction</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            Understand how AI systems compress and prioritize information when dealing with limited context windows.
+                        </p>
+                        <a href="demos/context_window_compaction.html" class="demo-link">
+                            Open Demo
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">AI Tools Landscape</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            Navigate the landscape of 86+ AI tools organized by category. Discover tools for your specific needs. <a href="demos/AI_tools.csv" style="font-size: 0.9rem;">(View raw data)</a>
+                        </p>
+                        <a href="demos/ai_tools_concept_map.html" class="demo-link">
+                            Open Demo
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">Prompt Engineering Lab</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            Practice writing effective prompts and learn to avoid common pitfalls with real-world business examples.
+                        </p>
+                        <a href="demos/prompt_errors_playground.html" class="demo-link">
+                            Open Demo
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">Invoice Automation Pipeline</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            See how AI can automate document processing workflows in a practical business scenario.
+                        </p>
+                        <a href="demos/pipeline1_invoice_autopilot_diagram.html" class="demo-link">
+                            Open Demo
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">Excel Data Analysis with AI</div>
+                    <div class="demo-body">
+                        <p class="demo-description">
+                            Learn how to use Claude to analyze and extract insights from Excel spreadsheets using the Hooulu Program as an example.
+                        </p>
+                        <a href="media/hooulu_program_data.xlsx" class="demo-link">
+                            Download Dataset
+                            <span>→</span>
+                        </a>
+                        <br>
+                        <a href="media/hooulu_program_prompts.txt" class="demo-link" style="margin-top: 0.5rem;">
+                            View Sample Prompts
+                            <span>→</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resources Section -->
+        <section id="resources">
+            <h2>Workshop Resources</h2>
+            <div class="resources-grid">
+                <div class="resource-card">
+                    <h3>Privacy & Best Practices</h3>
+                    <ul>
+                        <li><a href="media/chatbot-data-privacy.docx">Chatbot Data Privacy Guide</a></li>
+                        <li><a href="media/prompt-clarity_guide.docx">Prompt Clarity Guide</a></li>
+                    </ul>
+                </div>
+
+                <div class="resource-card">
+                    <h3>Creative Example</h3>
+                    <ul>
+                        <li><a href="media/hilo_song.txt">Hilo Song Prompt Example</a></li>
+                        <li style="color: var(--text-light); font-size: 0.9rem; border: none;">
+                            See how AI can help create localized content with cultural context
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tips Section -->
+        <section id="tips">
+            <h2>Getting Started</h2>
+
+            <div class="tips-container">
+                <h3>💡 Tips for Experimenting</h3>
+                <ul>
+                    <li>Start with the Context Window demo to understand AI's memory limitations</li>
+                    <li>Use the AI Tools Landscape to find tools relevant to your industry</li>
+                    <li>Practice prompt writing with the Prompt Engineering Lab</li>
+                    <li>The Invoice Pipeline shows a complete end-to-end automation example</li>
+                </ul>
+            </div>
+
+            <h3>Running Demos Locally</h3>
+            <p>All demos are self-contained HTML files that run in your browser. To use them:</p>
+            <div class="code-block">
+                1. Click on any demo link above
+                2. The demo will open in your browser
+                3. No installation or setup required
+                4. Works on any modern browser (Chrome, Firefox, Safari, Edge)
+            </div>
+
+            <h3>Questions from the Workshop</h3>
+            <p style="margin-top: 1rem; color: var(--text-light);">
+                Feel free to experiment with these tools and apply the concepts to your organization's specific needs.
+                Remember: start small, measure results, and scale what works.
+            </p>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>
+            AI Demystified Workshop • Mahdi Belcaid<br>
+            Department of Information and Computer Sciences • University of Hawaii at Mānoa<br>
+            Part of Vibrant Hawaii's Community Education Initiative
+        </p>
+    </footer>
+
+    <!-- Smooth Scrolling -->
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            } else {
+                header.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            }
+        });
+    </script>
+</body>
+</html>

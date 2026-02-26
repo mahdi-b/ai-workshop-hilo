@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tools Landscape — Interactive Concept Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+
+    /* Category colors */
+    --color-communicate: #2563eb;
+    --color-create: #7c3aed;
+    --color-understand: #10b981;
+    --color-act: #f59e0b;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+  }
+
+  /* Layout */
+  .main-container {
+    flex: 1;
+    display: flex;
+    height: calc(100vh - 100px);
+  }
+
+  /* Left Panel - Controls */
+  .left-panel {
+    width: 320px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+  }
+
+  /* View Mode Buttons */
+  .view-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .view-btn {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .view-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-primary);
+  }
+
+  .view-btn.active {
+    background: var(--text-primary);
+    color: white;
+    border-color: var(--text-primary);
+  }
+
+  /* Category Filters */
+  .category-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .category-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .category-toggle:hover {
+    border-color: var(--border-strong);
+  }
+
+  .category-toggle.active {
+    background: white;
+  }
+
+  .category-toggle input {
+    cursor: pointer;
+  }
+
+  .category-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .category-label {
+    flex: 1;
+    font-size: 0.875rem;
+  }
+
+  .category-count {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .stat-card {
+    background: var(--bg-primary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+
+  /* Canvas Container */
+  .canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+    background-image:
+      linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  #canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: grab;
+  }
+
+  #canvas.dragging {
+    cursor: grabbing;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    max-width: 300px;
+    z-index: 1000;
+  }
+
+  .tooltip.visible {
+    opacity: 1;
+  }
+
+  .tooltip-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tooltip-category {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .tooltip-description {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .tooltip-company {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .legend-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 0.5rem;
+  }
+
+  .legend-items {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  /* Search */
+  .search-box {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.875rem;
+  }
+
+  .search-box:focus {
+    outline: none;
+    border-color: var(--color-communicate);
+  }
+
+  /* Right Panel - Details */
+  .right-panel {
+    width: 320px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .details-section {
+    padding: 1.5rem;
+  }
+
+  .selected-tool {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tool-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tool-company {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-bottom: 0.75rem;
+  }
+
+  .tool-description {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+  }
+
+  .tool-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-item {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .meta-label {
+    font-weight: 500;
+    color: var(--text-tertiary);
+    min-width: 80px;
+  }
+
+  .meta-value {
+    color: var(--text-primary);
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .control-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .control-btn:hover {
+    background: var(--bg-primary);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AI Tools Landscape Explorer</h1>
+  <div class="subtitle">Interactive concept map of 86 AI tools across 4 major categories</div>
+</div>
+
+<div class="main-container">
+  <!-- Left Panel -->
+  <div class="left-panel">
+    <div class="panel-section">
+      <div class="section-title">Search Tools</div>
+      <input type="text" class="search-box" id="searchBox" placeholder="Search for tools..." />
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">View Mode</div>
+      <div class="view-modes">
+        <button class="view-btn active" onclick="setViewMode('hierarchy')">Dendrogram</button>
+        <button class="view-btn" onclick="setViewMode('cluster')">Category Clusters</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Categories</div>
+      <div class="category-filters">
+        <label class="category-toggle active">
+          <input type="checkbox" checked onchange="toggleCategory('Communicate')">
+          <div class="category-color" style="background: var(--color-communicate)"></div>
+          <span class="category-label">Communicate</span>
+          <span class="category-count" id="count-communicate">0</span>
+        </label>
+        <label class="category-toggle active">
+          <input type="checkbox" checked onchange="toggleCategory('Create')">
+          <div class="category-color" style="background: var(--color-create)"></div>
+          <span class="category-label">Create</span>
+          <span class="category-count" id="count-create">0</span>
+        </label>
+        <label class="category-toggle active">
+          <input type="checkbox" checked onchange="toggleCategory('Understand')">
+          <div class="category-color" style="background: var(--color-understand)"></div>
+          <span class="category-label">Understand</span>
+          <span class="category-count" id="count-understand">0</span>
+        </label>
+        <label class="category-toggle active">
+          <input type="checkbox" checked onchange="toggleCategory('Act')">
+          <div class="category-color" style="background: var(--color-act)"></div>
+          <span class="category-label">Act</span>
+          <span class="category-count" id="count-act">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Statistics</div>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="totalTools">86</div>
+          <div class="stat-label">Total Tools</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="visibleTools">86</div>
+          <div class="stat-label">Visible</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalCompanies">50+</div>
+          <div class="stat-label">Companies</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalCategories">20+</div>
+          <div class="stat-label">Categories</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Controls</div>
+      <div class="controls">
+        <button class="control-btn" onclick="resetView()">Reset View</button>
+        <button class="control-btn" onclick="zoomIn()">Zoom In</button>
+        <button class="control-btn" onclick="zoomOut()">Zoom Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-container">
+    <canvas id="canvas"></canvas>
+    <div class="tooltip" id="tooltip"></div>
+
+    <div class="legend">
+      <div class="legend-title">Categories</div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--color-communicate)"></div>
+          <span>Communicate</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--color-create)"></div>
+          <span>Create</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--color-understand)"></div>
+          <span>Understand</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: var(--color-act)"></div>
+          <span>Act</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="panel-section">
+      <div class="section-title">Selected Tool Details</div>
+      <div id="selectedDetails">
+        <div style="padding: 2rem; text-align: center; color: var(--text-tertiary); font-size: 0.875rem;">
+          Click on any node to see tool details
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// AI Tools Data (parsed from CSV)
+const toolsData = [
+  {macro: "Communicate", category: "General AI assistant", subcategory: "Consumer/work assistant chat", name: "ChatGPT", company: "OpenAI", description: "ChatGPT is a user-facing AI assistant that provides conversational help across knowledge work and supports multimodal inputs and tool use."},
+  {macro: "Create", category: "Content creation", subcategory: "Image generation & editing", name: "ChatGPT Images", company: "OpenAI", description: "ChatGPT includes an image generation experience powered by OpenAI's GPT Image models supporting prompt-based creation and edits."},
+  {macro: "Create", category: "Content creation", subcategory: "Image generation (4o native)", name: "GPT-4o Image Generation", company: "OpenAI", description: "OpenAI describes GPT-4o image generation as integrated with chat context and instruction following for practical visual creation and editing."},
+  {macro: "Create", category: "Video", subcategory: "Text-to-video / image-to-video", name: "Veo 3.1 (in Gemini)", company: "Google", description: "Gemini provides video generation powered by Veo 3.1 including reference-image control and vertical generation options."},
+  {macro: "Create", category: "Video", subcategory: "Video generation model", name: "Veo 3", company: "Google DeepMind", description: "DeepMind positions Veo as its video-generation model with creative controls and (for Veo 3) native audio capability."},
+  {macro: "Create", category: "Image", subcategory: "Text-to-image / editing via API", name: "Imagen (Gemini API)", company: "Google", description: "Google provides Imagen as a high-fidelity image generation model for text-to-image workflows in the Gemini API."},
+  {macro: "Create", category: "Image", subcategory: "Native image generation & editing", name: "Gemini 2.5 Flash Image", company: "Google", description: "Google's Gemini 2.5 Flash Image supports prompt-based image generation/editing plus multi-image fusion and world-knowledge-assisted creation."},
+  {macro: "Create", category: "Image", subcategory: "Text-to-image service", name: "Midjourney V7", company: "Midjourney, Inc.", description: "Midjourney's V7 is the service's image model version used for text/image prompts, with features like Draft Mode and Omni Reference."},
+  {macro: "Create", category: "Design", subcategory: "Template-based design with gen AI", name: "Adobe Express AI Assistant", company: "Adobe", description: "Adobe Express includes an AI Assistant that lets users create and edit designs via conversational prompts powered by Firefly and partner models."},
+  {macro: "Create", category: "Design", subcategory: "Generative media hub", name: "Adobe Firefly", company: "Adobe", description: "Adobe Firefly is a generative AI app and model family for creating media assets; Adobe also integrates partner models into Firefly."},
+  {macro: "Create", category: "Documents", subcategory: "PDF Q&A and summarization", name: "Acrobat AI Assistant", company: "Adobe", description: "Adobe Acrobat AI Assistant enables question answering and summaries over PDFs and documents in Acrobat."},
+  {macro: "Understand", category: "Search/RAG", subcategory: "Answer engine / web research", name: "Perplexity", company: "Perplexity AI", description: "Perplexity positions itself as an AI-powered answer engine for real-time question answering with sourced responses."},
+  {macro: "Act", category: "Browser/agentic assistants", subcategory: "AI browser with task automation", name: "Comet", company: "Perplexity AI", description: "Comet is an AI-native browser by Perplexity with an embedded assistant and task automation features."},
+  {macro: "Understand", category: "Search/RAG", subcategory: "Enterprise search + assistant", name: "Glean Assistant", company: "Glean", description: "Glean Assistant provides search and creation features over company and web knowledge with enterprise permissions."},
+  {macro: "Act", category: "Workflow automation / agentic assistants", subcategory: "Agent platform for enterprise work", name: "Glean Agents", company: "Glean", description: "Glean positions its platform as supporting agents with orchestration and governance connected to enterprise data."},
+  {macro: "Understand", category: "Search/RAG", subcategory: "Chat + enterprise search inside collaboration", name: "AI features in Slack", company: "Slack", description: "Slack provides built-in generative AI features including AI search answers based on permitted workspace messages/files and conversation summaries."},
+  {macro: "Understand", category: "Productivity", subcategory: "Document/file summarization", name: "Microsoft 365 Copilot app", company: "Microsoft", description: "The Microsoft 365 Copilot app provides a hub for working with files generating content and setting up agents."},
+  {macro: "Understand", category: "Productivity", subcategory: "Drive file/folder summaries & catch-up", name: "Gemini in Google Drive", company: "Google", description: "Google Drive includes Gemini-powered summaries and 'catch me up' to identify and summarize recent file updates."},
+  {macro: "Understand", category: "Document intelligence", subcategory: "Enterprise content Q&A", name: "Box AI", company: "Box", description: "Box AI is positioned as an enterprise AI platform for insights and content workflows on top of Box's content management with secure RAG."},
+  {macro: "Communicate", category: "Meetings", subcategory: "In-meeting copilot", name: "Copilot in Microsoft Teams", company: "Microsoft", description: "Copilot in Teams meetings can summarize key points and suggest action items in real time (with related transcript settings)."},
+  {macro: "Communicate", category: "Meetings", subcategory: "Meeting notetaker", name: "Otter.ai", company: "Otter.ai", description: "Otter is an AI notetaker providing transcription automated summaries and chat over meetings and recordings."},
+  {macro: "Communicate", category: "Meetings", subcategory: "Meeting summary + writing", name: "Zoom AI Companion", company: "Zoom", description: "Zoom AI Companion provides summaries drafting and capture capabilities across Zoom and connected platforms."},
+  {macro: "Understand", category: "Data analysis & BI", subcategory: "BI copilot", name: "Copilot for Power BI", company: "Microsoft", description: "Copilot for Power BI supports natural language interactions for analysis report creation and DAX generation."},
+  {macro: "Understand", category: "Data analysis & BI", subcategory: "Analytics assistant", name: "Databricks Assistant", company: "Databricks", description: "Databricks Assistant is a context-aware AI assistant embedded in notebooks and editors to help with data and code via conversation."},
+  {macro: "Understand", category: "Data analysis & BI", subcategory: "Analytics assistant", name: "Tableau Agent", company: "Tableau (Salesforce)", description: "Tableau Agent is described as a generative AI assistant supporting stages of analytics via natural language."},
+  {macro: "Understand", category: "Legal", subcategory: "Legal research assistant", name: "Westlaw Advantage", company: "Thomson Reuters", description: "Westlaw Advantage and Westlaw Edge provide AI-assisted research with verifiable results linked to Westlaw authority."},
+  {macro: "Act", category: "Legal", subcategory: "Specialized legal AI platform", name: "Harvey Assistant", company: "Harvey", description: "Harvey provides AI designed for legal and professional services including drafting and workflow support."},
+  {macro: "Act", category: "Security & IT operations", subcategory: "Security copilot", name: "Microsoft Security Copilot", company: "Microsoft", description: "Microsoft Security Copilot is a generative AI security solution that provides natural-language assistance for security and IT workflows."},
+  {macro: "Act", category: "Security & IT operations", subcategory: "Agentic cybersecurity analyst", name: "Charlotte AI", company: "CrowdStrike", description: "CrowdStrike positions Charlotte AI as the 'brain' of an agentic SOC providing LLM-powered chat and agentic workflows for triage and response."},
+  {macro: "Act", category: "Workflow automation / agentic assistants", subcategory: "Build & publish agents", name: "Microsoft Copilot Studio", company: "Microsoft", description: "Microsoft Copilot Studio is a platform for building customizing and deploying AI agents across channels."},
+  {macro: "Act", category: "Workflow automation / agentic assistants", subcategory: "Automation-focused agents", name: "Zapier Agents", company: "Zapier", description: "Zapier Agents are designed to automate tasks across Zapier's app ecosystem with a shift toward automation as the primary focus."},
+  {macro: "Act", category: "Workflow automation / agentic assistants", subcategory: "CRM/enterprise agent platform", name: "Agentforce", company: "Salesforce", description: "Salesforce positions Agentforce as a platform to build deploy and manage AI agents at scale across business functions."},
+  {macro: "Communicate", category: "Customer support & contact centers", subcategory: "AI agent (customer self-service)", name: "Fin AI Agent", company: "Intercom", description: "Fin is an AI agent designed to resolve customer service inquiries across channels, positioned as part of Intercom's customer service platform."},
+  {macro: "Communicate", category: "Sales & revenue ops", subcategory: "CRM assistant", name: "Breeze Assistant", company: "HubSpot", description: "Breeze Assistant is a conversational assistant in HubSpot for sales marketing and service teams to generate content and summarize data."},
+  {macro: "Act", category: "Sales & revenue ops", subcategory: "Revenue AI platform", name: "Gong Revenue AI", company: "Gong", description: "Gong positions its platform as an AI operating system for revenue teams analyzing customer interactions to drive execution."},
+  {macro: "Create", category: "Marketing", subcategory: "Brand-safe copy and workflows", name: "Jasper", company: "Jasper", description: "Jasper is positioned as an agent workspace for marketing teams offering specialized AI agents and end-to-end content workflows."},
+  {macro: "Create", category: "Marketing", subcategory: "Enterprise writing and agentic work", name: "Writer", company: "Writer", description: "Writer provides an enterprise AI platform built around its Palmyra LLM family for agentic enterprise work."},
+  {macro: "Communicate", category: "Education & training", subcategory: "AI tutor", name: "Khanmigo", company: "Khan Academy", description: "Khanmigo is an AI-powered tutor and teaching assistant from Khan Academy, designed to guide learners rather than simply give answers."},
+  {macro: "Communicate", category: "Education & training", subcategory: "Language learning tutor", name: "Duolingo Max", company: "Duolingo", description: "Duolingo Max adds AI-powered learning features like Roleplay and Explain My Answer built with GPT-4."},
+  {macro: "Create", category: "Coding & software engineering", subcategory: "IDE code completion & chat", name: "JetBrains AI Assistant", company: "JetBrains", description: "JetBrains AI Assistant provides AI-powered coding support including code explanation completion and chat/agent workflows inside JetBrains IDEs."},
+  {macro: "Create", category: "Coding & software engineering", subcategory: "Developer agent/editor", name: "Cursor", company: "Anysphere", description: "Cursor is an AI-powered code editor aimed at accelerating development; model options vary over time and configuration."},
+  {macro: "Create", category: "Coding & software engineering", subcategory: "Cloud developer assistant", name: "Amazon Q Developer", company: "Amazon Web Services", description: "Amazon Q Developer is AWS's generative AI assistant for developers offered via AWS services and IDE integrations."},
+  {macro: "Create", category: "Coding & software engineering", subcategory: "Coding assistant", name: "GitHub Copilot", company: "GitHub", description: "GitHub Copilot provides AI assistance across developer workflows (inline completion and chat) and can support multiple models depending on admin settings."},
+  {macro: "Understand", category: "Research & science", subcategory: "Literature review assistant", name: "Elicit", company: "Elicit", description: "Elicit supports searching and synthesizing scientific literature including summarization and data extraction from papers."},
+  {macro: "Understand", category: "Research & science", subcategory: "Academic search engine", name: "Consensus", company: "Consensus", description: "Consensus is an AI academic search engine that uses language models to synthesize research and provide cited answers."},
+  {macro: "Create", category: "Writing", subcategory: "Workspace writing assistant", name: "Notion AI", company: "Notion", description: "Notion AI provides writing and knowledge assistance embedded in Notion docs and workspace workflows."},
+  {macro: "Create", category: "Writing", subcategory: "Writing assistant & rewrite", name: "Grammarly", company: "Grammarly", description: "Grammarly provides AI-assisted writing help from drafting to rewrites and tone suggestions across apps."},
+  {macro: "Create", category: "Design", subcategory: "Template-based gen design suite", name: "Canva Magic Studio", company: "Canva", description: "Canva offers Magic Studio features that apply generative AI to design creation editing and writing workflows inside Canva."},
+  {macro: "Create", category: "Audio", subcategory: "Text-to-speech / voice cloning", name: "ElevenLabs", company: "ElevenLabs", description: "ElevenLabs offers AI voice generation for text-to-speech and voice workflows."},
+  {macro: "Create", category: "Audio", subcategory: "Text-to-music generation", name: "Suno", company: "Suno", description: "Suno provides a consumer-facing interface to generate music from text prompts."},
+  {macro: "Communicate", category: "General AI assistant", subcategory: "Team/enterprise chat assistant", name: "Claude", company: "Anthropic", description: "Anthropic's Claude is a conversational AI assistant offered via web and enterprise plans marketed for professional work and coding/agents."},
+  {macro: "Communicate", category: "General AI assistant", subcategory: "Consumer AI assistant", name: "Gemini", company: "Google", description: "Gemini is Google's AI assistant providing writing planning and multimodal help with plan-based access to advanced capabilities like video generation."}
+];
+
+// Canvas setup
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+// State
+let nodes = [];
+let edges = [];
+let viewMode = 'hierarchy';
+let activeCategories = new Set(['Communicate', 'Create', 'Understand', 'Act']);
+let zoom = 1;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let hoveredNode = null;
+let selectedNode = null;
+let searchQuery = '';
+
+// Colors for categories
+const categoryColors = {
+  'Communicate': '#2563eb',
+  'Create': '#7c3aed',
+  'Understand': '#10b981',
+  'Act': '#f59e0b'
+};
+
+// Initialize canvas
+function initCanvas() {
+  const container = document.querySelector('.canvas-container');
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+
+  // Set initial view
+  panX = canvas.width / 2;
+  panY = canvas.height / 2;
+  zoom = 0.7; // Good starting zoom for radial layout
+}
+
+// Create force-directed layout with physics
+function createHierarchy() {
+  nodes = [];
+  edges = [];
+
+  // Group tools by macro category, then category
+  const macroGroups = {};
+
+  toolsData.forEach(tool => {
+    if (!activeCategories.has(tool.macro)) return;
+
+    if (!macroGroups[tool.macro]) {
+      macroGroups[tool.macro] = {};
+    }
+
+    if (!macroGroups[tool.macro][tool.category]) {
+      macroGroups[tool.macro][tool.category] = [];
+    }
+
+    macroGroups[tool.macro][tool.category].push(tool);
+  });
+
+  // Create center node
+  const centerNode = {
+    id: 'center',
+    label: 'AI Tools',
+    type: 'root',
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    fx: 0, // Fixed position
+    fy: 0,
+    radius: 15,
+    color: '#374151',
+    children: [],
+    mass: 5
+  };
+  nodes.push(centerNode);
+
+  // Create nodes with initial positions
+  const macroCategories = Object.keys(macroGroups);
+  const angleStep = (Math.PI * 2) / macroCategories.length;
+
+  macroCategories.forEach((macroName, macroIndex) => {
+    const macroAngle = macroIndex * angleStep;
+    const macroRadius = 250;
+
+    const macroNode = {
+      id: `macro-${macroName}`,
+      label: macroName,
+      type: 'macro',
+      macro: macroName,
+      x: Math.cos(macroAngle) * macroRadius,
+      y: Math.sin(macroAngle) * macroRadius,
+      vx: 0,
+      vy: 0,
+      radius: 20,
+      color: categoryColors[macroName],
+      children: [],
+      mass: 3
+    };
+    nodes.push(macroNode);
+    centerNode.children.push(macroNode);
+
+    edges.push({
+      from: centerNode,
+      to: macroNode,
+      color: '#9ca3af', // Darker gray for better visibility
+      type: 'straight',
+      strength: 1.0,
+      distance: macroRadius
+    });
+
+    // Create categories
+    const categories = Object.entries(macroGroups[macroName]);
+    const categoryAngleSpread = Math.PI / 2;
+    const categoryAngleStart = macroAngle - categoryAngleSpread / 2;
+
+    categories.forEach(([categoryName, tools], catIndex) => {
+      const categoryAngle = categoryAngleStart +
+        (catIndex / Math.max(1, categories.length - 1)) * categoryAngleSpread;
+      const categoryRadius = 150;
+
+      const categoryNode = {
+        id: `category-${macroName}-${categoryName}`,
+        label: categoryName,
+        type: 'category',
+        macro: macroName,
+        category: categoryName,
+        x: macroNode.x + Math.cos(categoryAngle) * categoryRadius,
+        y: macroNode.y + Math.sin(categoryAngle) * categoryRadius,
+        vx: 0,
+        vy: 0,
+        radius: 12,
+        color: categoryColors[macroName] + 'BB',
+        children: [],
+        mass: 2
+      };
+      nodes.push(categoryNode);
+      macroNode.children.push(categoryNode);
+
+      edges.push({
+        from: macroNode,
+        to: categoryNode,
+        color: categoryColors[macroName] + '66', // More opaque color
+        type: 'straight',
+        strength: 0.8,
+        distance: categoryRadius
+      });
+
+      // Create tool nodes
+      tools.forEach((tool, toolIndex) => {
+        const toolAngle = (toolIndex / tools.length) * Math.PI * 2;
+        const toolRadius = 80;
+
+        const toolNode = {
+          id: `tool-${tool.name}`,
+          label: tool.name,
+          type: 'tool',
+          macro: macroName,
+          category: categoryName,
+          company: tool.company,
+          description: tool.description,
+          subcategory: tool.subcategory,
+          x: categoryNode.x + Math.cos(toolAngle) * toolRadius + (Math.random() - 0.5) * 20,
+          y: categoryNode.y + Math.sin(toolAngle) * toolRadius + (Math.random() - 0.5) * 20,
+          vx: 0,
+          vy: 0,
+          radius: 5,
+          color: categoryColors[macroName] + '88',
+          mass: 1
+        };
+        nodes.push(toolNode);
+        categoryNode.children.push(toolNode);
+
+        edges.push({
+          from: categoryNode,
+          to: toolNode,
+          color: categoryColors[macroName] + '44', // More visible but still subtle
+          type: 'straight',
+          strength: 0.5,
+          distance: toolRadius
+        });
+      });
+    });
+  });
+
+  // Run force simulation to prevent overlaps
+  runForceSimulation();
+  updateStats();
+}
+
+// Force-directed simulation
+function runForceSimulation() {
+  const iterations = 200;
+  const alpha = 0.1;
+  const repulsionStrength = 500;
+  const attractionStrength = 0.001;
+
+  for (let iter = 0; iter < iterations; iter++) {
+    const decay = 1 - (iter / iterations) * 0.5; // Cooling
+
+    // Apply forces
+    nodes.forEach((nodeA, i) => {
+      if (nodeA.fx !== undefined) {
+        nodeA.x = nodeA.fx;
+        nodeA.y = nodeA.fy;
+        return;
+      }
+
+      let fx = 0;
+      let fy = 0;
+
+      // Repulsion between all nodes
+      nodes.forEach((nodeB, j) => {
+        if (i === j) return;
+
+        const dx = nodeA.x - nodeB.x;
+        const dy = nodeA.y - nodeB.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0 && distance < 200) {
+          // Stronger repulsion for nodes with text
+          const minDistance = nodeA.radius + nodeB.radius +
+            (nodeA.type === 'tool' || nodeB.type === 'tool' ? 50 : 80);
+
+          if (distance < minDistance) {
+            const force = repulsionStrength * (1 / distance) * decay;
+            fx += (dx / distance) * force;
+            fy += (dy / distance) * force;
+          }
+        }
+      });
+
+      // Attraction along edges
+      edges.forEach(edge => {
+        if (edge.from === nodeA || edge.to === nodeA) {
+          const other = edge.from === nodeA ? edge.to : edge.from;
+          const dx = other.x - nodeA.x;
+          const dy = other.y - nodeA.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance > 0) {
+            const desiredDistance = edge.distance || 100;
+            const force = attractionStrength * (distance - desiredDistance) * decay * (edge.strength || 1);
+            fx += (dx / distance) * force;
+            fy += (dy / distance) * force;
+          }
+        }
+      });
+
+      // Apply forces
+      nodeA.vx = (nodeA.vx || 0) * 0.9 + fx * alpha / (nodeA.mass || 1);
+      nodeA.vy = (nodeA.vy || 0) * 0.9 + fy * alpha / (nodeA.mass || 1);
+
+      // Update position
+      nodeA.x += nodeA.vx;
+      nodeA.y += nodeA.vy;
+    });
+  }
+}
+
+// Update statistics
+function updateStats() {
+  const visibleTools = nodes.filter(n => n.type === 'tool').length;
+  document.getElementById('visibleTools').textContent = visibleTools;
+
+  // Update category counts
+  const counts = {
+    'Communicate': 0,
+    'Create': 0,
+    'Understand': 0,
+    'Act': 0
+  };
+
+  nodes.filter(n => n.type === 'tool').forEach(node => {
+    if (counts[node.macro] !== undefined) {
+      counts[node.macro]++;
+    }
+  });
+
+  Object.keys(counts).forEach(cat => {
+    const el = document.getElementById(`count-${cat.toLowerCase()}`);
+    if (el) el.textContent = counts[cat];
+  });
+}
+
+// Draw function
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoom, zoom);
+
+  // Draw edges with thicker, more visible lines
+  edges.forEach(edge => {
+    if (searchQuery && !matchesSearch(edge.from) && !matchesSearch(edge.to)) {
+      ctx.globalAlpha = 0.1;
+    } else {
+      ctx.globalAlpha = 0.7; // More opaque for better visibility
+    }
+
+    ctx.strokeStyle = edge.color;
+
+    // Thicker lines based on hierarchy level
+    if (edge.from.type === 'root') {
+      ctx.lineWidth = 3; // Thickest for main branches
+    } else if (edge.from.type === 'macro') {
+      ctx.lineWidth = 2; // Medium for category connections
+    } else {
+      ctx.lineWidth = 1.5; // Still visible for tool connections
+    }
+
+    // Always use straight lines
+    ctx.beginPath();
+    ctx.moveTo(edge.from.x, edge.from.y);
+    ctx.lineTo(edge.to.x, edge.to.y);
+    ctx.stroke();
+  });
+
+  ctx.globalAlpha = 1;
+
+  // Draw nodes - sort to ensure proper layering
+  const sortedNodes = [...nodes].sort((a, b) => {
+    const typeOrder = { macro: 0, category: 1, tool: 2 };
+    return typeOrder[a.type] - typeOrder[b.type];
+  });
+
+  sortedNodes.forEach(node => {
+    const isHighlighted = !searchQuery || matchesSearch(node);
+    ctx.globalAlpha = isHighlighted ? 1 : 0.2;
+
+    // Draw node circle with hierarchy-appropriate styling
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+
+    if (node.type === 'macro') {
+      // Main categories - solid fill
+      ctx.fillStyle = node.color;
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (node.type === 'category') {
+      // Subcategories - white with colored border
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.strokeStyle = node.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (node.type === 'tool') {
+      // Tools - light colored fill
+      ctx.fillStyle = node.color + '22';
+      ctx.fill();
+      ctx.strokeStyle = node.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    if (node === hoveredNode || node === selectedNode) {
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // Draw labels with smart positioning to avoid overlap
+    if (node.type === 'root' || node.type === 'macro') {
+      // Always show macro/root labels - now in black with white outline
+      ctx.font = `700 ${node.type === 'root' ? '12px' : '14px'} sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // White stroke for better contrast on colored backgrounds
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 3;
+      ctx.strokeText(node.label, node.x, node.y);
+
+      ctx.fillStyle = '#111827'; // Black text
+      ctx.fillText(node.label, node.x, node.y);
+    } else if (node.type === 'category' && zoom > 0.4) {
+      // Show category labels when zoomed in a bit
+      ctx.fillStyle = '#111827'; // Black text
+      ctx.font = '600 10px sans-serif';
+
+      // Position text radially to avoid overlap
+      const dx = node.x;
+      const dy = node.y;
+      const angle = Math.atan2(dy, dx);
+
+      // Position text outside the node on the radial line
+      const textX = node.x + Math.cos(angle) * (node.radius + 15);
+      const textY = node.y + Math.sin(angle) * (node.radius + 15);
+
+      // Align text based on position
+      if (Math.abs(angle) > Math.PI / 2) {
+        ctx.textAlign = 'right';
+      } else {
+        ctx.textAlign = 'left';
+      }
+      ctx.textBaseline = 'middle';
+
+      // Truncate long names
+      const maxLength = 18;
+      const label = node.label.length > maxLength ?
+        node.label.substring(0, maxLength - 2) + '..' : node.label;
+
+      ctx.fillText(label, textX, textY);
+    } else if (node.type === 'tool' && (zoom > 1.0 || node === hoveredNode || node === selectedNode)) {
+      // Only show tool labels when really zoomed in or selected
+      ctx.fillStyle = '#374151'; // Darker gray/black for tool labels
+      ctx.font = '400 8px sans-serif';
+
+      // Radial text positioning for tools too
+      const angle = Math.atan2(node.y, node.x);
+      const textX = node.x + Math.cos(angle) * (node.radius + 10);
+      const textY = node.y + Math.sin(angle) * (node.radius + 10);
+
+      if (Math.abs(angle) > Math.PI / 2) {
+        ctx.textAlign = 'right';
+      } else {
+        ctx.textAlign = 'left';
+      }
+      ctx.textBaseline = 'middle';
+
+      // Very short tool names
+      const maxLength = 10;
+      const label = node.label.length > maxLength ?
+        node.label.substring(0, maxLength - 2) + '..' : node.label;
+
+      ctx.fillText(label, textX, textY);
+    }
+  });
+
+  ctx.restore();
+}
+
+// Check if node matches search
+function matchesSearch(node) {
+  if (!searchQuery) return true;
+  const query = searchQuery.toLowerCase();
+  return node.label.toLowerCase().includes(query) ||
+         (node.company && node.company.toLowerCase().includes(query)) ||
+         (node.description && node.description.toLowerCase().includes(query));
+}
+
+// Handle mouse events
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left - panX) / zoom;
+  const y = (e.clientY - rect.top - panY) / zoom;
+
+  // Check if clicking on a node
+  let clickedNode = null;
+  nodes.forEach(node => {
+    const dist = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+    if (dist <= node.radius) {
+      clickedNode = node;
+    }
+  });
+
+  if (clickedNode) {
+    selectNode(clickedNode);
+  } else {
+    isDragging = true;
+    dragStartX = e.clientX - panX;
+    dragStartY = e.clientY - panY;
+    canvas.classList.add('dragging');
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+
+  if (isDragging) {
+    panX = e.clientX - dragStartX;
+    panY = e.clientY - dragStartY;
+    draw();
+  } else {
+    const x = (e.clientX - rect.left - panX) / zoom;
+    const y = (e.clientY - rect.top - panY) / zoom;
+
+    // Check hover
+    let newHoveredNode = null;
+    nodes.forEach(node => {
+      const dist = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+      if (dist <= node.radius) {
+        newHoveredNode = node;
+      }
+    });
+
+    if (newHoveredNode !== hoveredNode) {
+      hoveredNode = newHoveredNode;
+      draw();
+
+      if (hoveredNode && hoveredNode.type === 'tool') {
+        // Show tooltip
+        tooltip.innerHTML = `
+          <div class="tooltip-category">${hoveredNode.macro} > ${hoveredNode.category}</div>
+          <div class="tooltip-title">${hoveredNode.label}</div>
+          <div class="tooltip-description">${hoveredNode.description}</div>
+          <div class="tooltip-company">by ${hoveredNode.company}</div>
+        `;
+        tooltip.style.left = e.clientX + 10 + 'px';
+        tooltip.style.top = e.clientY + 10 + 'px';
+        tooltip.classList.add('visible');
+      } else {
+        tooltip.classList.remove('visible');
+      }
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  isDragging = false;
+  canvas.classList.remove('dragging');
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredNode = null;
+  tooltip.classList.remove('visible');
+  draw();
+});
+
+// Handle wheel for zoom
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom *= delta;
+  zoom = Math.max(0.5, Math.min(3, zoom));
+  draw();
+});
+
+// Select node and show details
+function selectNode(node) {
+  selectedNode = node;
+  draw();
+
+  if (node.type === 'tool') {
+    const detailsEl = document.getElementById('selectedDetails');
+    detailsEl.innerHTML = `
+      <div class="selected-tool">
+        <div class="tool-name">${node.label}</div>
+        <div class="tool-company">${node.company}</div>
+        <div class="tool-description">${node.description}</div>
+        <div class="tool-meta">
+          <div class="meta-item">
+            <span class="meta-label">Category:</span>
+            <span class="meta-value">${node.macro}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Type:</span>
+            <span class="meta-value">${node.category}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Subtype:</span>
+            <span class="meta-value">${node.subcategory}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Control functions
+function setViewMode(mode) {
+  viewMode = mode;
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Reorganize nodes based on view mode
+  if (mode === 'cluster') {
+    createClusterView();
+  } else {
+    createHierarchy();
+  }
+  draw();
+}
+
+function createClusterView() {
+  nodes = [];
+  edges = [];
+
+  const clusters = {};
+
+  // Group by macro category
+  toolsData.forEach(tool => {
+    if (!activeCategories.has(tool.macro)) return;
+    if (!clusters[tool.macro]) {
+      clusters[tool.macro] = [];
+    }
+    clusters[tool.macro].push(tool);
+  });
+
+  let clusterIndex = 0;
+  Object.entries(clusters).forEach(([macro, tools]) => {
+    const centerX = (clusterIndex - 1.5) * 300;
+    const centerY = 0;
+
+    // Create cluster center
+    const centerNode = {
+      id: `cluster-${macro}`,
+      label: macro,
+      type: 'macro',
+      macro: macro,
+      x: centerX,
+      y: centerY,
+      radius: 35,
+      color: categoryColors[macro]
+    };
+    nodes.push(centerNode);
+
+    // Add tools in circle around center
+    tools.forEach((tool, i) => {
+      const angle = (i / tools.length) * Math.PI * 2;
+      const radius = 100 + (Math.floor(i / 8) * 40);
+
+      const toolNode = {
+        id: `tool-${tool.name}`,
+        label: tool.name,
+        type: 'tool',
+        macro: tool.macro,
+        category: tool.category,
+        subcategory: tool.subcategory,
+        company: tool.company,
+        description: tool.description,
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius,
+        radius: 12,
+        color: categoryColors[tool.macro] + '88'
+      };
+      nodes.push(toolNode);
+
+      edges.push({
+        from: centerNode,
+        to: toolNode,
+        color: categoryColors[tool.macro] + '22'
+      });
+    });
+
+    clusterIndex++;
+  });
+
+  updateStats();
+}
+
+function toggleCategory(category) {
+  const checkbox = event.target;
+  const toggle = checkbox.closest('.category-toggle');
+
+  if (checkbox.checked) {
+    activeCategories.add(category);
+    toggle.classList.add('active');
+  } else {
+    activeCategories.delete(category);
+    toggle.classList.remove('active');
+  }
+
+  createHierarchy();
+  draw();
+}
+
+function resetView() {
+  zoom = 1;
+  panX = canvas.width / 2;
+  panY = canvas.height / 2;
+  draw();
+}
+
+function zoomIn() {
+  zoom *= 1.2;
+  zoom = Math.min(3, zoom);
+  draw();
+}
+
+function zoomOut() {
+  zoom *= 0.8;
+  zoom = Math.max(0.5, zoom);
+  draw();
+}
+
+// Search functionality
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  draw();
+});
+
+// Initialize
+window.addEventListener('resize', () => {
+  initCanvas();
+  draw();
+});
+
+initCanvas();
+createHierarchy();
+draw();
+</script>
+
+</body>
+</html>
